@@ -7,4 +7,7 @@ const chartController = new ChartController();
 // Rota para gerar PDF com gráfico radar
 router.post('/radar-chart-pdf', (req, res) => chartController.generateRadarChartPdf(req, res));
 
-export default router; 
+// Rota para gerar PDF de diagnóstico completo com dois gráficos
+router.post('/diagnostic-pdf', (req, res) => chartController.generateDiagnosticPdf(req, res));
+
+export default router;
