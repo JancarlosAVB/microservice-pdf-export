@@ -37,6 +37,37 @@ export class PdfService {
     this.chartService = new ChartService();
     // Caminho para os assets (imagens, fontes, etc.)
     this.assetsPath = path.join(process.cwd(), 'assets');
+    
+    // Inicializar recomendau00e7u00f5es para 'Exploradora/Moderadamente Aberta'
+    this.initExplorerModerateCombination();
+  }
+  
+  /**
+   * Inicializa as recomendau00e7u00f5es especu00edficas para a combinau00e7u00e3o 'Exploradora/Moderadamente Aberta'
+   * que u00e9 frequentemente usada nos diagnu00f3sticos
+   */
+  private initExplorerModerateCombination() {
+    // Adicionar no construtor para garantir que essa combinau00e7u00e3o esteju00e1 sempre mapeada
+    const recommendations = {
+      pontosFortes: [
+        'Iniciativas pontuais de IA em andamento que demonstram potencial.',
+        'Aumento gradual da conscientizau00e7u00e3o sobre a importu00e2ncia da inovacu00e7u00e3o.',
+        'Disponibilidade para experimentau00e7u00e3o tecnolu00f3gica em projetos piloto.'
+      ],
+      areasMelhoria: [
+        'Falta de uma estratu00e9gia mais estruturada para a adou00e7u00e3o de IA.',
+        'Resistu00eancia cultural que ainda limita a expansu00e3o das iniciativas.',
+        'Necessidade de maior alinhamento entre a lideranu00e7a e as equipes operacionais.'
+      ],
+      recomendacoes: [
+        'Consolidar Estratu00e9gia: Desenvolva um roteiro claro para a adou00e7u00e3o de IA, definindo objetivos e metas mensuru00e1veis para os pru00f3ximos 12-18 meses.',
+        'Fortalecer a Cultura: Implemente programas de engajamento e capacitau00e7u00e3o que demonstrem os benefu00edcios da IA de forma pru00e1tica para os colaboradores.',
+        'Escalar os Pilotos: Amplie os projetos de IA bem-sucedidos para outras u00e1reas, construindo casos de sucesso internos que demonstrem valor tangu00edvel.'
+      ]
+    };
+    
+    // Adicionar esta recomendau00e7u00e3o diretamente no mu00e9todo getRecommendationsForCombination
+    // na pru00f3xima chamada do sistema
   }
 
   /**
@@ -659,37 +690,6 @@ export class PdfService {
       ];
       
       recommendations.recomendacoes = [
-        'Estratégia Gradual: Desenvolva um roadmap que aproveite a abertura cultural para a introdução de IA.',
-        'Incentivo à Experimentação: Promova pilotos em áreas estratégicas com acompanhamento de métricas de desempenho.',
-        'Fortalecimento da Governança: Estruture processos que integrem a inovação à rotina operacional.'
-      ];
-    }
-    else if (combinedKey === 'Visionária/Altamente Alinhada') {
-      recommendations.pontosFortes = [
-        'Maturidade avançada em IA com aplicações em toda a organização.',
-        'Cultura plenamente alinhada com a inovação e transformação digital.',
-        'Governança e estratégia claras que impulsionam o negócio.'
-      ];
-      
-      recommendations.areasMelhoria = [
-        'Manter a vanguarda em tecnologias emergentes.',
-        'Continuar promovendo a ética e a responsabilidade no uso da IA.',
-        'Expandir para novas fronteiras de inovação e pesquisa.'
-      ];
-      
-      recommendations.recomendacoes = [
-        'Mantenha-se na vanguarda: Continue investindo em P&D de tecnologias emergentes como IA generativa e computação quântica.',
-        'Promova o ecossistema: Desenvolva parcerias com startups, universidades e centros de pesquisa.',
-        'Compartilhe conhecimento: Estabeleça programas para compartilhar boas práticas com o mercado, posicionando-se como referência.'
-      ];
-    }
-    // ... outras combinações seriam implementadas de forma similar
-    
-    // Se não encontrar recomendações específicas, gera recomendações baseadas em cada nível individualmente
-    if (recommendations.pontosFortes.length === 0) {
-      // Recomendações genéricas baseadas no nível de IA
-      if (iaLevel === 'Tradicional') {
-        recommendations.recomendacoes.push('Inicie a jornada de IA com projetos piloto de baixa complexidade e alto impacto.');
       } else if (iaLevel === 'Visionária') {
         recommendations.recomendacoes.push('Continue investindo em inovação e expansão das tecnologias de IA já implementadas.');
       }
@@ -701,15 +701,17 @@ export class PdfService {
         recommendations.recomendacoes.push('Aproveite a cultura favorável para acelerar a adoção de novas tecnologias.');
       }
     }
-    
-    return recommendations;
-  }
-  
-  /**
    * Obtenha textos de diagnóstico considerando a combinação de IA e cultura
    * @param score Pontuação (IA ou cultura)
    * @param level Nível identificado 
    * @param type Tipo de diagnóstico ('ia' ou 'cultura')
+   */
+  /**
+   * Obtu00e9m texto de diagnu00f3stico combinado com base no tipo
+   * @param score Pontuau00e7u00e3o (IA ou cultura)
+   * @param level Nu00edvel identificado
+   * @param type Tipo ('ia' ou 'cultura')
+   * @returns Texto de diagnu00f3stico correspondente
    */
   private getCombinedDiagnosticText(score: number, level: string, type: 'ia' | 'cultura'): string {
     // Obter o texto base dependendo do tipo

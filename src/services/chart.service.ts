@@ -1,5 +1,5 @@
 import { Canvas, CanvasRenderingContext2D } from 'canvas';
-import { Chart, ChartConfiguration, RadarController, LineElement, PointElement, RadialLinearScale, Tooltip, Legend, Filler } from 'chart.js';
+import { Chart, ChartConfiguration, ChartType, RadarController, LineElement, PointElement, RadialLinearScale, Tooltip, Legend, Filler } from 'chart.js';
 import { RadarChartData } from '../interfaces/chart.interface';
 
 // Registrar os componentes necessários do Chart.js
@@ -9,77 +9,159 @@ export class ChartService {
   /**
    * Gera um gráfico radar no canvas fornecido
    * @param canvas Canvas onde o gráfico será desenhado
-   * @param chartData Dados para o gráfico radar
+   * @param options Dados e opções para o gráfico radar
    * @returns O objeto Chart criado
    */
-  public generateRadarChart(canvas: Canvas, chartData: RadarChartData): Chart {
-    // Configurar cores padrão se não fornecidas
-    const datasets = chartData.datasets.map(dataset => {
-      const defaultColor = this.generateRandomColor(0.6);
-      const defaultBorderColor = this.generateRandomColor(1);
+  public generateRadarChart(canvas: Canvas, options: RadarChartData): Chart {
+    const ctx = canvas.getContext('2d') as unknown as CanvasRenderingContext2D;
+    const { labels, datasets, width = 800, height = 800, title = '' } = options;
+    
+    // Aumentar a resolução do canvas para melhorar a qualidade
+    canvas.width = 1200;
+    canvas.height = 1200;
+    
+    // Define cores fixas para cada tipo de gráfico com melhor contraste
+    const isIAChart = title.toLowerCase().includes('inteligência') || 
+                      title.toLowerCase().includes('ia') || 
+                      labels.some(label => label.toLowerCase().includes('ia'));
+    
+    // Cores para cada tipo de gráfico com melhor opacidade para visualização
+    const chartColors = isIAChart ? 
+      { backgroundColor: 'rgba(54, 162, 235, 0.3)', borderColor: 'rgb(54, 162, 235)', pointColor: 'rgb(54, 162, 235)' } : 
+      { backgroundColor: 'rgba(255, 99, 132, 0.3)', borderColor: 'rgb(255, 99, 132)', pointColor: 'rgb(255, 99, 132)' };
+    
+    // Processar dados para garantir que estejam na escala correta (1-4)
+    const processedDatasets = datasets.map(dataset => {
+      // Garantir que todos os valores estejam entre 1 e 4
+      const processedData = dataset.data.map(value => {
+        if (value < 1) return 1;
+        if (value > 4) return 4;
+        return Math.round(value); // Arredondar para ter valores inteiros
+      });
       
       return {
         ...dataset,
-        backgroundColor: dataset.backgroundColor || 'rgba(75, 192, 192, 0.2)',
-        borderColor: dataset.borderColor || 'rgba(75, 192, 192, 1)',
-        borderWidth: dataset.borderWidth !== undefined ? dataset.borderWidth : 1,
-        pointBackgroundColor: dataset.pointBackgroundColor || defaultBorderColor,
-        pointBorderColor: dataset.pointBorderColor || '#fff',
-        pointRadius: dataset.pointRadius !== undefined ? dataset.pointRadius : 3,
-        fill: dataset.fill !== undefined ? dataset.fill : true
+        data: processedData,
+        backgroundColor: chartColors.backgroundColor,
+        borderColor: chartColors.borderColor,
+        borderWidth: 3, // Aumentar espessura da linha
+        pointBackgroundColor: chartColors.pointColor,
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: chartColors.borderColor,
+        pointRadius: 6, // Pontos maiores
+        pointHoverRadius: 8
       };
     });
-
-    // Configuração do gráfico
+    
+    // Configurar o gráfico com opções de alta qualidade
     const config: ChartConfiguration = {
-      type: 'radar',
+      type: 'radar' as ChartType,
       data: {
-        labels: chartData.labels,
-        datasets,
+        labels: labels,
+        datasets: processedDatasets,
       },
       options: {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
-          legend: {
-            position: 'top',
-          },
           title: {
-            display: !!chartData.title,
-            text: chartData.title || '',
+            display: !!title,
+            text: title,
             font: {
-              size: 18
+              size: 16, // Aumentar tamanho do título
+              weight: 'bold',
+            },
+            padding: {
+              top: 20,
+              bottom: 20
             }
           },
+          legend: {
+            display: false, // Ocultar a legenda para simplificar
+            position: 'top' as const,
+          },
           tooltip: {
-            enabled: true
+            enabled: true,
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleFont: {
+              size: 14
+            },
+            bodyFont: {
+              size: 14
+            },
+            padding: 10
           }
         },
         scales: {
           r: {
+            min: 0,
+            max: 4, // Escala de 1-4
             beginAtZero: true,
             ticks: {
+              stepSize: 1,
               backdropColor: 'transparent',
-              color: '#666'
+              font: {
+                size: 30, // Fonte maior para os números das escalas
+                weight: 'bold'
+              },
+              color: '#333',
+              padding: 5
             },
             grid: {
-              color: 'rgba(0, 0, 0, 0.1)'
+              color: 'rgba(0, 0, 0, 0.2)', // Linhas de grade mais visíveis
+              lineWidth: 2, // Linhas mais grossas
+              circular: true
             },
             angleLines: {
-              color: 'rgba(0, 0, 0, 0.1)'
+              color: 'rgba(0, 0, 0, 0.2)', // Linhas de ângulo mais visíveis
+              lineWidth: 2 // Linhas mais grossas
             },
             pointLabels: {
-              color: '#666',
               font: {
-                size: 12
+                size: 30, // Fonte maior para os textos dos eixos
+                weight: 'bold'
+              },
+              color: '#000000', // Cor mais escura para melhor legibilidade
+              padding: 15, // Mais espaço entre labels
+              // Quebrar linhas longas para melhor formatação
+              callback: function(value: string) {
+                if (value.length > 20) {
+                  const words = value.split(' ');
+                  let result = '';
+                  let line = '';
+                  
+                  for (const word of words) {
+                    if ((line + word).length > 15) {
+                      result += line + '\n'; // Usando a sequência de escape correta
+                      line = word + ' ';
+                    } else {
+                      line += word + ' ';
+                    }
+                  }
+                  
+                  return result + line.trim();
+                }
+                return value;
               }
             }
           }
+        },
+        elements: {
+          line: {
+            tension: 0.2, // Adicionar suavidade às linhas
+            borderWidth: 3 // Linhas mais grossas
+          },
+          point: {
+            radius: 6, // Pontos maiores
+            hoverRadius: 8,
+            borderWidth: 2
+          }
         }
-      },
+      }
     };
 
-    // Criar e retornar o gráfico
-    const ctx = canvas.getContext('2d') as unknown as CanvasRenderingContext2D;
+    // Criar o gráfico
     return new Chart(ctx as any, config);
   }
 

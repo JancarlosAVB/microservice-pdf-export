@@ -1,0 +1,83 @@
+{
+  "iaChartData": {
+    "labels": [
+      "Estratégia IA", 
+      "Governança", 
+      "Tecnologia", 
+      "Dados", 
+      "Processos", 
+      "Parcerias", 
+      "Pessoas", 
+      "Inovação", 
+      "Ética", 
+      "Impacto nos Negócios"
+    ],
+    "datasets": [
+      {
+        "label": "Maturidade IA",
+        "data": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "backgroundColor": "rgba(54, 162, 235, 0.2)",
+        "borderColor": "rgba(54, 162, 235, 1)",
+        "borderWidth": 2,
+        "pointBackgroundColor": "rgba(54, 162, 235, 1)"
+      }
+    ],
+    "title": "Maturidade em Inteligência Artificial"
+  },
+  "culturaChartData": {
+    "labels": [
+      "Liderança", 
+      "Comunicação", 
+      "Treinamento", 
+      "Ferramentas", 
+      "Engajamento", 
+      "Colaboração", 
+      "Resistência", 
+      "Incentivos", 
+      "Experimentação", 
+      "Adaptabilidade"
+    ],
+    "datasets": [
+      {
+        "label": "Cultura para IA",
+        "data": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "backgroundColor": "rgba(255, 99, 132, 0.2)",
+        "borderColor": "rgba(255, 99, 132, 1)",
+        "borderWidth": 2,
+        "pointBackgroundColor": "rgba(255, 99, 132, 1)"
+      }
+    ],
+    "title": "Cultura Organizacional para IA"
+  },
+  "formData": {
+    "pergunta_1": "Possui estratégia limitada para IA",
+    "pergunta_2": "Governança em estágio inicial",
+    "pergunta_3": "Utiliza tecnologias básicas para automação",
+    "pergunta_4": "Possui dados não estruturados",
+    "pergunta_5": "Processos parcialmente adaptados",
+    "pergunta_6": "Parcerias pontuais com fornecedores",
+    "pergunta_7": "Equipe com conhecimento moderado",
+    "pergunta_8": "Iniciativas isoladas de inovação",
+    "pergunta_9": "Diretrizes éticas em desenvolvimento",
+    "pergunta_10": "Impacto estratégico limitado",
+    "pergunta_11": "Liderança moderadamente engajada",
+    "pergunta_12": "Comunicação regular sobre iniciativas",
+    "pergunta_13": "Treinamentos básicos disponíveis",
+    "pergunta_14": "Ferramentas adequadas para colaboração",
+    "pergunta_15": "Engajamento satisfatório dos colaboradores",
+    "pergunta_16": "Cultura de colaboração em evolução",
+    "pergunta_17": "Resistência moderada à mudança",
+    "pergunta_18": "Incentivos limitados para inovação",
+    "pergunta_19": "Experimentação permitida em algumas áreas",
+    "pergunta_20": "Adaptabilidade crescente aos novos paradigmas"
+  },
+  "pdfOptions": {
+    "title": "Diagnóstico de Maturidade IA e Cultura",
+    "author": "Singulari",
+    "subject": "Análise de Maturidade em IA e Cultura Organizacional",
+    "fileName": "diagnostico-ia-cultura.pdf",
+    "pageSize": "A4",
+    "pageOrientation": "portrait",
+    "skipCombinedAnalysis": false
+  }
+}

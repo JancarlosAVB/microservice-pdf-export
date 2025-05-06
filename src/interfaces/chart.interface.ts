@@ -22,6 +22,7 @@ export interface PdfOptions {
   title?: string;
   author?: string;
   subject?: string;
+  keywords?: string;
   fileName?: string;
   pageSize?: 'A4' | 'A3' | 'LETTER' | string;
   pageOrientation?: 'portrait' | 'landscape';
