@@ -1,0 +1,37 @@
+### Verifica a saúde do serviço
+GET http://localhost:3000/health
+Accept: application/json
+
+### Gera um PDF com gráfico radar
+POST http://localhost:3000/api/radar-chart-pdf
+Content-Type: application/json
+
+{
+  "chartData": {
+    "labels": ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho"],
+    "datasets": [
+      {
+        "label": "Visitantes 2023",
+        "data": [65, 59, 80, 81, 56, 55],
+        "backgroundColor": "rgba(75, 192, 192, 0.2)",
+        "borderColor": "rgba(75, 192, 192, 1)",
+        "borderWidth": 1,
+        "pointBackgroundColor": "rgba(75, 192, 192, 1)",
+        "pointBorderColor": "#fff",
+        "pointRadius": 3,
+        "fill": true
+      }
+    ],
+    "title": "Radar Chart",
+    "width": 700,
+    "height": 500
+  },
+  "pdfOptions": {
+    "title": "Showing total visitors for the last 6 months",
+    "author": "Sistema de Relatórios",
+    "subject": "Análise de Visitantes",
+    "fileName": "radar-chart-visitors.pdf",
+    "pageSize": "A4",
+    "pageOrientation": "portrait"
+  }
+} 
