@@ -391,13 +391,73 @@ export class ChartController {
    * Gera um arquivo PDF de diagnóstico completo com dois gráficos radar (IA e Cultura)
    * e informações detalhadas de análise e recomendações
    * @param req Requisição Express
+   * @param res Resposta Express
+   */
+  public async generateDiagnosticPdf(req: Request, res: Response): Promise<void> {
+    try {
+      let { iaChartData, culturaChartData, pdfOptions } = req.body as DiagnosticChartRequest;
+      
+      // Verificar se recebemos dados especiais do WordPress
+      if (req.body.formData && req.body.formData._use_direct_values === true) {
+        console.log('Detectados valores diretos enviados pelo WordPress!');
         
-// Preenchimento com valores mínimos se necessário
-return new Array(labels.length).fill(1);
-}
-    
-return values;
-}
+        // Usar os valores pré-calculados do WordPress se disponíveis
+        if (req.body.formData._ia_values && Array.isArray(req.body.formData._ia_values) && 
+            iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
+          console.log('Usando valores IA diretos:', req.body.formData._ia_values);
+          iaChartData.datasets[0].data = req.body.formData._ia_values;
+        }
+        
+        if (req.body.formData._cultura_values && Array.isArray(req.body.formData._cultura_values) && 
+            culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
+          console.log('Usando valores Cultura diretos:', req.body.formData._cultura_values);
+          culturaChartData.datasets[0].data = req.body.formData._cultura_values;
+        }
+      }
+      // Se também foi enviado dados de formulário brutos e NÃO temos valores diretos, tentá-los processar
+      else if (req.body.formData) {
+        const formData = req.body.formData;
+        console.log('Dados de formulário recebidos:', JSON.stringify(formData, null, 2));
+        
+        // Processar valores manualmente, pergunta por pergunta
+        if (iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
+          const iaValues = [];
+          for (let i = 1; i <= 10; i++) {
+            const key = `pergunta_${i}`;
+            if (typeof formData[key] === 'number') {
+              iaValues.push(formData[key]);
+            } else if (!isNaN(Number(formData[key]))) {
+              iaValues.push(Number(formData[key]));
+            } else {
+              iaValues.push(this.mapResponseToValue(formData[key] || ''));
+            }
+          }
+          iaChartData.datasets[0].data = iaValues;
+          console.log('Valores processados IA:', iaValues);
+        }
+        
+        if (culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
+          const culturaValues = [];
+          for (let i = 11; i <= 20; i++) {
+            const key = `pergunta_${i}`;
+            if (typeof formData[key] === 'number') {
+              culturaValues.push(formData[key]);
+            } else if (!isNaN(Number(formData[key]))) {
+              culturaValues.push(Number(formData[key]));
+            } else {
+              culturaValues.push(this.mapResponseToValue(formData[key] || ''));
+            }
+          }
+          culturaChartData.datasets[0].data = culturaValues;
+          console.log('Valores processados Cultura:', culturaValues);
+        }
+      }
+      
+      // Validar se os dados dos gráficos foram fornecidos
+      if (!iaChartData || !iaChartData.labels || !iaChartData.datasets || iaChartData.datasets.length === 0) {
+        res.status(400).json({ 
+          success: false, 
+          message: 'Dados do gráfico de IA inválidos. Verifique se você forneceu labels e datasets.' 
         });
         return;
       }
