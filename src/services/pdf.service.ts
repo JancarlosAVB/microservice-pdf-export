@@ -524,7 +524,7 @@ export class PdfService {
    * @param level Nível de maturidade
    * @returns Texto de diagnóstico
    */
-  private getIADiagnosticText(score: number, level: string): string {
+  public getIADiagnosticText(score: number, level: string): string {
     // Textos base para cada nível de maturidade baseado no sistema do WordPress
     const diagnosticTexts: Record<string, string> = {
       'Tradicional': 'Sua organização está em um estágio inicial de adoção de IA, com uso limitado de tecnologias avançadas. Os processos são mais tradicionais e as iniciativas de IA são pontuais ou inexistentes. Há oportunidade para explorar os benefícios que a IA pode trazer para o seu negócio.',
@@ -556,7 +556,7 @@ export class PdfService {
    * @param level Nível de alinhamento cultural
    * @returns Texto de diagnóstico
    */
-  private getCultureDiagnosticText(score: number, level: string): string {
+  public getCultureDiagnosticText(score: number, level: string): string {
     // Textos base para cada nível de cultura baseado no sistema do WordPress
     const diagnosticTexts: Record<string, string> = {
       'Alta Resistência': 'A cultura organizacional atual apresenta resistência significativa à adoção de IA e novas tecnologias. Há receio quanto ao impacto da tecnologia nas funções existentes e pouca abertura para mudanças nos processos de trabalho. A liderança ainda não demonstra apoio claro às iniciativas de inovação.',
