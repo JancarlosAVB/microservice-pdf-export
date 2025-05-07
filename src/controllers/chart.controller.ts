@@ -110,9 +110,9 @@ export class ChartController {
       'Equipe altamente capacitada e atualizada': 4,
       
       'Investimento inexistente ou insignificante': 1,
-      'Investimento pontual': 2,
+      'Investimento pontual (IA)': 2,
       'Investimento regular, mas moderado': 3,
-      'Investimento robusto e contínuo': 4,
+      'Investimento robusto e contínuo (IA)': 4,
       
       'Não é considerada na estratégia': 1,
       'Considerada de forma pontual': 2,
@@ -151,9 +151,9 @@ export class ChartController {
       'Comunicação fluida e integrada': 4,
       
       'Não investe': 1,
-      'Investimento pontual': 2,
+      'Investimento pontual (cultura)': 2,
       'Investimento regular, porém limitado': 3,
-      'Investimento robusto e contínuo': 4,
+      'Investimento robusto e contínuo (cultura)': 4,
       
       'Não há reconhecimento': 1,
       'Reconhecimento eventual': 2,
