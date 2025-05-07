@@ -5,6 +5,57 @@ import { ChartRequest, DiagnosticChartRequest } from '../interfaces/chart.interf
 export class ChartController {
   private pdfService: PdfService;
 
+  /**
+   * Endpoint para retornar análise completa do relatório (JSON)
+   */
+  public async getDiagnosticReport(req: Request, res: Response): Promise<void> {
+    try {
+      const submissionId = req.params.submission_id;
+      // Simulação de banco: buscar dados do submissionId
+      // Substitua por busca real no futuro
+      const submissionsDb = require('../../test-diagnostico.json');
+      const submission = submissionsDb[submissionId];
+      if (!submission) {
+        res.status(404).json({ success: false, message: 'Submissão não encontrada.' });
+        return;
+      }
+      // Processar os dados do formulário
+      const iaLabels = submission.iaChartData?.labels || [];
+      const culturaLabels = submission.culturaChartData?.labels || [];
+      const iaValues = this.processFormData(submission.formData, 'pergunta_ia_', iaLabels);
+      const culturaValues = this.processFormData(submission.formData, 'pergunta_cultura_', culturaLabels);
+      // Calcular scores e níveis
+      const iaScore = iaValues.reduce((sum, v) => sum + (v || 0), 0);
+      const culturaScore = culturaValues.reduce((sum, v) => sum + (v || 0), 0);
+      const iaLevel = this.pdfService['calculateMaturityLevel'](iaScore);
+      const culturaLevel = this.pdfService['calculateCultureLevel'](culturaScore);
+      // Insights dinâmicos (exemplo: pode ser expandido com lógica real)
+      const insights: string[] = [
+        this.pdfService.getIADiagnosticText(iaScore, iaLevel),
+        this.pdfService.getCultureDiagnosticText(culturaScore, culturaLevel)
+      ];
+      // Recomendações detalhadas
+      const recommendations: { pontosFortes: string[], areasMelhoria: string[], recomendacoes: string[] } = this.pdfService['getRecommendationsForCombination'](iaLevel, culturaLevel);
+      const diagnosticText: string = this.pdfService['analyzeCombination'](iaScore, culturaScore)?.diagnostic_text || '';
+      res.json({
+        success: true,
+        ia_score: iaScore,
+        cultura_score: culturaScore,
+        ia_level: iaLevel,
+        cultura_level: culturaLevel,
+        insights,
+        recommendations,
+        diagnostic_text: diagnosticText,
+        company: submission.company || '',
+        pdf_url: submission.pdf_url || '',
+        form_data: submission.formData || {},
+        message: ''
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Erro ao processar relatório', error: error instanceof Error ? error.message : error });
+    }
+  }
+
   constructor() {
     this.pdfService = new PdfService();
   }
