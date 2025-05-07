@@ -614,7 +614,7 @@ export class PdfService {
    * @param culturaLevel Nível de cultura
    * @returns Objeto com recomendações
    */
-  private getRecommendationsForCombination(iaLevel: string, culturaLevel: string): any {
+  public getRecommendationsForCombination(iaLevel: string, culturaLevel: string): any {
     // Estrutura padrão
     const recommendations = {
       pontosFortes: [] as string[],
