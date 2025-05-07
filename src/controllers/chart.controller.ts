@@ -391,41 +391,13 @@ export class ChartController {
    * Gera um arquivo PDF de diagnóstico completo com dois gráficos radar (IA e Cultura)
    * e informações detalhadas de análise e recomendações
    * @param req Requisição Express
-   * @param res Resposta Express
-   */
-  public async generateDiagnosticPdf(req: Request, res: Response): Promise<void> {
-    try {
-      let { iaChartData, culturaChartData, pdfOptions } = req.body as DiagnosticChartRequest;
-      
-      // Se também foi enviado dados de formulário brutos, processá-los
-      if (req.body.formData) {
-        const formData = req.body.formData;
-        console.log('Dados de formulário recebidos:', JSON.stringify(formData, null, 2));
         
-        // Processar dados para IA se necessário
-        if (iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
-          // Usar 'ia' como prefixo para processar perguntas 1-10
-          const processedValues = this.processFormData(formData, 'ia', iaChartData.labels || []);
-          iaChartData.datasets[0].data = processedValues;
-          
-          console.log('Valores processados de IA:', processedValues);
-        }
-        
-        // Processar dados para Cultura se necessário
-        if (culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
-          // Usar 'cultura' como prefixo para processar perguntas 11-20
-          const processedValues = this.processFormData(formData, 'cultura', culturaChartData.labels || []);
-          culturaChartData.datasets[0].data = processedValues;
-          
-          console.log('Valores processados de Cultura:', processedValues);
-        }
-      }
-      
-      // Validar se os dados dos gráficos foram fornecidos
-      if (!iaChartData || !iaChartData.labels || !iaChartData.datasets || iaChartData.datasets.length === 0) {
-        res.status(400).json({ 
-          success: false, 
-          message: 'Dados do gráfico de IA inválidos. Verifique se você forneceu labels e datasets.' 
+// Preenchimento com valores mínimos se necessário
+return new Array(labels.length).fill(1);
+}
+    
+return values;
+}
         });
         return;
       }
