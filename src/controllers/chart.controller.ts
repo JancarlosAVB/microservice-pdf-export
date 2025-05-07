@@ -66,8 +66,113 @@ export class ChartController {
    * @returns Valor numérico entre 1 e 4
    */
   private mapResponseToValue(textResponse: string): number {
-    // Mapeamento de respostas comuns para valores
-    const responseMap: Record<string, number> = {
+    // Mapeamento de respostas específicas do formulário para valores
+    const formResponseMap: Record<string, number> = {
+      // Perguntas 1-10 (IA)
+      'Não utiliza e não tem planos': 1,
+      'Tem interesse, mas ainda não implementou': 2,
+      'Utiliza de forma limitada em alguns processos': 3,
+      'Utiliza de forma estruturada e estratégica em diversas áreas': 4,
+      
+      'Nenhuma área': 1,
+      '1 a 2 áreas': 2,
+      '3 a 4 áreas': 3,
+      '5 ou mais áreas': 4,
+      
+      'Falta de interesse ou conhecimento': 1,
+      'Cultura organizacional resistente': 2,
+      'Dificuldade técnica ou de integração': 3,
+      'Questões de investimento e custo elevado': 4,
+      
+      'Não há nenhum projeto de IA aplicado': 1,
+      'Benefícios iniciais sem impacto estratégico': 2,
+      'Melhoria operacional perceptível': 3,
+      'Impacto estratégico e financeiro comprovado': 4,
+      
+      'Sem processo definido': 1,
+      'Avaliações pontuais e reativas': 2,
+      'Testes-piloto antes da implementação': 3,
+      'Processo estratégico e estruturado': 4,
+      
+      'Sem planos de expansão': 1,
+      'Pouca escalabilidade devido a limitações': 2,
+      'Potencial de crescimento moderado': 3,
+      'Alta capacidade de expansão e integração': 4,
+      
+      'Totalmente desconectada': 1,
+      'Integração incipiente': 2,
+      'Integrada em áreas-chave': 3,
+      'Integração completa e sistêmica': 4,
+      
+      'Nenhuma capacitação': 1,
+      'Capacitação limitada e informal': 2,
+      'Treinamentos periódicos e direcionados': 3,
+      'Equipe altamente capacitada e atualizada': 4,
+      
+      'Investimento inexistente ou insignificante': 1,
+      'Investimento pontual': 2,
+      'Investimento regular, mas moderado': 3,
+      'Investimento robusto e contínuo': 4,
+      
+      'Não é considerada na estratégia': 1,
+      'Considerada de forma pontual': 2,
+      'Presente em alguns planos estratégicos': 3,
+      'Central na estratégia e visão de futuro': 4,
+      
+      // Perguntas 11-20 (Cultura)
+      'Evita mudanças': 1,
+      'Aceita mudanças somente quando forçada': 2,
+      'Adota mudanças de forma reativa': 3,
+      'Abraça mudanças de forma proativa': 4,
+      
+      'Não participam': 1,
+      'Participação mínima ou pontual': 2,
+      'Participação de alguns colaboradores': 3,
+      'Engajamento amplo e colaborativo': 4,
+      
+      'Ambiente competitivo e individualista': 1,
+      'Algumas iniciativas isoladas': 2,
+      'Ambiente colaborativo com restrições': 3,
+      'Ambiente fortemente colaborativo e de aprendizado contínuo': 4,
+      
+      'Erros são penalizados': 1,
+      'Experimentação é desencorajada': 2,
+      'Aceita experimentação com cautela': 3,
+      'Vê os erros como oportunidades de aprendizado': 4,
+      
+      'Não há incentivo': 1,
+      'Incentivos esporádicos': 2,
+      'Incentivo moderado': 3,
+      'Incentivo contínuo e estruturado': 4,
+      
+      'Comunicação inexistente ou ineficaz': 1,
+      'Comunicação esporádica': 2,
+      'Comunicação regular, mas não sistemática': 3,
+      'Comunicação fluida e integrada': 4,
+      
+      'Não investe': 1,
+      'Investimento pontual': 2,
+      'Investimento regular, porém limitado': 3,
+      'Investimento robusto e contínuo': 4,
+      
+      'Não há reconhecimento': 1,
+      'Reconhecimento eventual': 2,
+      'Reconhecimento em áreas específicas': 3,
+      'Reconhecimento sistemático e motivador': 4,
+      
+      'Feedback ausente ou negativo': 1,
+      'Feedback informal e esporádico': 2,
+      'Feedback regular, mas não estruturado': 3,
+      'Feedback contínuo e estruturado': 4,
+      
+      'Desconexão total': 1,
+      'Entendimento limitado': 2,
+      'Alinhamento parcial': 3,
+      'Total compreensão e engajamento': 4
+    };
+    
+    // Mapeamento de termos genéricos para valores
+    const genericResponseMap: Record<string, number> = {
       // Respostas negativas (baixo valor)
       'não utiliza': 1,
       'inexistente': 1,
@@ -120,24 +225,33 @@ export class ChartController {
     // Verificar correspondencias parciais em texto de respostas longas
     if (!textResponse) return 1; // Valor padrão para respostas vazias
     
+    // Verificação direta para opções de formulário
+    if (formResponseMap[textResponse] !== undefined) {
+      console.log(`Mapeamento exato encontrado para '${textResponse}': ${formResponseMap[textResponse]}`);
+      return formResponseMap[textResponse];
+    }
+    
     const lowerText = textResponse.toLowerCase();
     
-    // Verificar correspondências exatas primeiro
-    if (responseMap[lowerText]) return responseMap[lowerText];
+    // Verificar correspondências exatas nos termos genéricos
+    if (genericResponseMap[lowerText]) return genericResponseMap[lowerText];
     
-    // Verificar correspondências parciais
-    for (const [key, value] of Object.entries(responseMap)) {
+    // Verificar correspondências parciais nos termos genéricos
+    for (const [key, value] of Object.entries(genericResponseMap)) {
       if (lowerText.includes(key)) {
         return value;
       }
     }
     
     // Detecções mais específicas baseadas no contexto do log
-    if (lowerText.includes('utiliza de forma limitada')) return 2;
-    if (lowerText.includes('impacto estratégico')) return 4;
+    if (lowerText.includes('não utiliza') || lowerText.includes('sem')) return 1;
+    if (lowerText.includes('tem interesse') || lowerText.includes('forma limitada')) return 2;
+    if (lowerText.includes('impacto estratégico') || lowerText.includes('estruturada')) return 4;
     if (lowerText.includes('integração completa')) return 4;
     if (lowerText.includes('capacitada')) return 4;
-    if (lowerText.includes('abraça mudanças')) return 3;
+    if (lowerText.includes('abraça mudanças')) return 4;
+    
+    console.log(`Não foi possível mapear '${textResponse}', usando valor padrão 2`);
     
     // Valor padrão se não houver correspondência
     return 2;
@@ -153,11 +267,14 @@ export class ChartController {
   private processFormData(formData: Record<string, any>, prefix: string, labels: string[]): number[] {
     const values: number[] = [];
     
+    console.log(`Processando dados de ${prefix} com ${Object.keys(formData).length} campos no formulário`);
+    
     // Extração baseada no tipo de perguntas
     if (prefix === 'ia') {
       // Extrai valores das perguntas 1 a 10 de IA
       for (let i = 1; i <= 10; i++) {
         const key = `pergunta_${i}`;
+        console.log(`[IA ${i}] Processando ${key}: ${formData[key] || 'não encontrado'}`);
         
         // Verificar se o valor é um inteiro direto ou texto que precisa ser mapeado
         if (formData[key]) {
@@ -165,18 +282,23 @@ export class ChartController {
             // Se for um número ou string numérica, converter diretamente
             const numValue = Number(formData[key]);
             values.push(numValue >= 1 && numValue <= 4 ? numValue : 1);
+            console.log(`[IA ${i}] Valor numérico: ${numValue}`);
           } else {
             // Se for texto, mapear para valor
-            values.push(this.mapResponseToValue(formData[key]));
+            const mappedValue = this.mapResponseToValue(formData[key]);
+            values.push(mappedValue);
+            console.log(`[IA ${i}] Texto mapeado: '${formData[key]}' => ${mappedValue}`);
           }
         } else {
           values.push(1); // Valor padrão se a pergunta não for encontrada
+          console.log(`[IA ${i}] Não encontrado, usando valor padrão 1`);
         }
       }
     } else if (prefix === 'cultura') {
       // Extrai valores das perguntas 11 a 20 de Cultura
       for (let i = 11; i <= 20; i++) {
         const key = `pergunta_${i}`;
+        console.log(`[Cultura ${i-10}] Processando ${key}: ${formData[key] || 'não encontrado'}`);
         
         // Verificar se o valor é um inteiro direto ou texto que precisa ser mapeado
         if (formData[key]) {
@@ -184,12 +306,16 @@ export class ChartController {
             // Se for um número ou string numérica, converter diretamente
             const numValue = Number(formData[key]);
             values.push(numValue >= 1 && numValue <= 4 ? numValue : 1);
+            console.log(`[Cultura ${i-10}] Valor numérico: ${numValue}`);
           } else {
             // Se for texto, mapear para valor
-            values.push(this.mapResponseToValue(formData[key]));
+            const mappedValue = this.mapResponseToValue(formData[key]);
+            values.push(mappedValue);
+            console.log(`[Cultura ${i-10}] Texto mapeado: '${formData[key]}' => ${mappedValue}`);
           }
         } else {
           values.push(1); // Valor padrão se a pergunta não for encontrada
+          console.log(`[Cultura ${i-10}] Não encontrado, usando valor padrão 1`);
         }
       }
     }
