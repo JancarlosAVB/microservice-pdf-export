@@ -311,8 +311,8 @@ export class ChartController {
         return;
       }
       
-      // Gerar o PDF de diagnóstico
-      const pdfStream = await this.pdfService.generateDiagnosticPdf(iaChartData, culturaChartData, pdfOptions);
+      // Gerar o PDF de diagnostico
+      const pdfStream = await this.pdfService.generateDiagnosticPdf(iaChartData, culturaChartData, pdfOptions, req.body.formData);
       
       // Configurar headers para download do PDF
       const fileName = pdfOptions?.fileName || 'diagnostico-ia-cultura.pdf';
