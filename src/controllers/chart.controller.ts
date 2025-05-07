@@ -153,23 +153,41 @@ export class ChartController {
   private processFormData(formData: Record<string, any>, prefix: string, labels: string[]): number[] {
     const values: number[] = [];
     
-    // Extração baseada nos padrões do log
-    if (prefix === 'pergunta_ia_') {
+    // Extração baseada no tipo de perguntas
+    if (prefix === 'ia') {
       // Extrai valores das perguntas 1 a 10 de IA
       for (let i = 1; i <= 10; i++) {
         const key = `pergunta_${i}`;
+        
+        // Verificar se o valor é um inteiro direto ou texto que precisa ser mapeado
         if (formData[key]) {
-          values.push(this.mapResponseToValue(formData[key]));
+          if (typeof formData[key] === 'number' || !isNaN(Number(formData[key]))) {
+            // Se for um número ou string numérica, converter diretamente
+            const numValue = Number(formData[key]);
+            values.push(numValue >= 1 && numValue <= 4 ? numValue : 1);
+          } else {
+            // Se for texto, mapear para valor
+            values.push(this.mapResponseToValue(formData[key]));
+          }
         } else {
           values.push(1); // Valor padrão se a pergunta não for encontrada
         }
       }
-    } else if (prefix === 'pergunta_cultura_') {
+    } else if (prefix === 'cultura') {
       // Extrai valores das perguntas 11 a 20 de Cultura
       for (let i = 11; i <= 20; i++) {
         const key = `pergunta_${i}`;
+        
+        // Verificar se o valor é um inteiro direto ou texto que precisa ser mapeado
         if (formData[key]) {
-          values.push(this.mapResponseToValue(formData[key]));
+          if (typeof formData[key] === 'number' || !isNaN(Number(formData[key]))) {
+            // Se for um número ou string numérica, converter diretamente
+            const numValue = Number(formData[key]);
+            values.push(numValue >= 1 && numValue <= 4 ? numValue : 1);
+          } else {
+            // Se for texto, mapear para valor
+            values.push(this.mapResponseToValue(formData[key]));
+          }
         } else {
           values.push(1); // Valor padrão se a pergunta não for encontrada
         }
@@ -260,7 +278,8 @@ export class ChartController {
         
         // Processar dados para IA se necessário
         if (iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
-          const processedValues = this.processFormData(formData, 'pergunta_ia_', iaChartData.labels || []);
+          // Usar 'ia' como prefixo para processar perguntas 1-10
+          const processedValues = this.processFormData(formData, 'ia', iaChartData.labels || []);
           iaChartData.datasets[0].data = processedValues;
           
           console.log('Valores processados de IA:', processedValues);
@@ -268,7 +287,8 @@ export class ChartController {
         
         // Processar dados para Cultura se necessário
         if (culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
-          const processedValues = this.processFormData(formData, 'pergunta_cultura_', culturaChartData.labels || []);
+          // Usar 'cultura' como prefixo para processar perguntas 11-20
+          const processedValues = this.processFormData(formData, 'cultura', culturaChartData.labels || []);
           culturaChartData.datasets[0].data = processedValues;
           
           console.log('Valores processados de Cultura:', processedValues);
