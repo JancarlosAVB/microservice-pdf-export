@@ -5,10 +5,12 @@ import { RadarChartData, PdfOptions, ChartDataset } from '../interfaces/chart.in
 import { Readable } from 'stream';
 import * as fs from 'fs';
 import * as path from 'path';
+import { DiagnosticService } from './diagnostic.service';
 
 export class PdfService {
   private chartService: ChartService;
   private assetsPath: string;
+  private diagnosticService: DiagnosticService;
   
   // Mapeamento de texto diagnóstico para combinações de IA e Cultura
   private diagnosticMapping: Record<string, string> = {
@@ -35,6 +37,7 @@ export class PdfService {
 
   constructor() {
     this.chartService = new ChartService();
+    this.diagnosticService = new DiagnosticService();
     // Caminho para os assets (imagens, fontes, etc.)
     this.assetsPath = path.join(process.cwd(), 'assets');
   }
@@ -291,150 +294,15 @@ export class PdfService {
     // Garantir espaço adequado após o cabeçalho
     doc.moveDown(3);
     
-    // Adicionar seção 'O que isso significa para sua empresa?'
-    doc.fontSize(18)
-       .font('Helvetica-Bold')
-       .fillColor('#334A7C')
-       .text('O que isso significa para sua empresa?', 60, doc.y, { width: doc.page.width - 120, align: 'left' })
-       .moveDown(1);
-       
-    // Usar as pontuações já calculadas anteriormente
-    const analysis = this.analyzeCombination(iaScore, culturaScore);
-    
-    // Bulleted list como mostrado na imagem de referência
-    const bulletPoints = [
-      'Sua empresa utiliza a IA de forma estruturada e conta com uma cultura que apoia ativamente a inovação e a colaboração.',
-      'Mesmo com um bom equilíbrio entre tecnologia e cultura, aprimorar a escalabilidade e garantir a continuidade dos investimentos pode impulsionar os resultados.',
-      'O próximo passo é consolidar processos, fomentar a inovação contínua e implementar programas de reconhecimento para manter a competitividade.'
-    ];
-    
-    // Adicionar cada item da lista com bullet point
-    bulletPoints.forEach(point => {
-      doc.fontSize(12)
-         .font('Helvetica')
-         .fillColor('#333333')
-         .text('•', 60, doc.y, { continued: true })
-         .text(' ' + point, { width: doc.page.width - 140, align: 'left' })
-         .moveDown(1);
-    });
-    
+    // Adicionar seção de insights usando o método dedicado que agora usa o DiagnosticService
+    this.generateInsightsPage(doc, iaChartData, culturaChartData, options);
+
     // Cálculo para dimensionamento do PDF
     const pageWidth = pageOrientation === 'portrait' ? 
       (pageSize === 'A4' ? 595.28 : 612) : 
       (pageSize === 'A4' ? 841.89 : 792);
     
     const margin = 60; // Margem ajustada para 60
-    
-    // Adicionar diagnóstico de cultura
-    doc.fontSize(12)
-      .font('Helvetica')
-      .fillColor('#333333')
-      .text(this.getCultureDiagnosticText(options.culturaScore || 0, culturaLevel), {
-        align: 'justify',
-        width: pageWidth - (margin * 2)
-      })
-      .moveDown(1);
-    
-      
-    // Adicionar diagnóstico combinado se existir
-    if (analysis.diagnostic_text && !options.skipCombinedAnalysis) {
-      doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#333333')
-        .text('Análise Combinada', { align: 'left' })
-        .moveDown(0.5);
-        
-      doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333')
-        .text(analysis.diagnostic_text, {
-          align: 'justify',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(2);
-    } else {
-      doc.moveDown(1);
-    }
-    
-    // Adicionar nova página para recomendações
-    doc.addPage();
-    
-    // Adicionar seção de recomendações
-    doc.fontSize(18)
-      .font('Helvetica-Bold')
-      .fillColor('#333333')
-      .text('Recomendações e Próximos Passos', { align: 'left' })
-      .moveDown(1);
-    
-    // Usar recomendações da opção ou da análise combinada
-    const recommendations = options.recommendations || analysis.recommendations;
-    
-    // Adicionar pontos fortes se disponíveis
-    if (recommendations?.pontosFortes && recommendations.pontosFortes.length > 0) {
-      doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#4CAF50')
-        .text('Pontos Fortes', { align: 'left' })
-        .moveDown(0.5);
-      
-      doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333');
-      
-      recommendations.pontosFortes.forEach((ponto: string, index: number) => {
-        doc.text(`${index + 1}. ${ponto}`, {
-          align: 'left',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(0.5);
-      });
-      
-      doc.moveDown(1);
-    }
-    
-    // Adicionar áreas de melhoria se disponíveis
-    if (recommendations?.areasMelhoria && recommendations.areasMelhoria.length > 0) {
-      doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#FF9800')
-        .text('Áreas para Melhoria', { align: 'left' })
-        .moveDown(0.5);
-      
-      doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333');
-      
-      recommendations.areasMelhoria.forEach((area: string, index: number) => {
-        doc.text(`${index + 1}. ${area}`, {
-          align: 'left',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(0.5);
-      });
-      
-      doc.moveDown(1);
-    }
-    
-    // Adicionar recomendações específicas se disponíveis
-    if (recommendations?.recomendacoes && recommendations.recomendacoes.length > 0) {
-      doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#1a73e8')
-        .text('Recomendações Específicas', { align: 'left' })
-        .moveDown(0.5);
-      
-      doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333');
-      
-      recommendations.recomendacoes.forEach((recomendacao: string, index: number) => {
-        doc.text(`${index + 1}. ${recomendacao}`, {
-          align: 'left',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(0.5);
-      });
-    }
     
     // Finalizar o documento
     doc.end();
@@ -718,5 +586,167 @@ export class PdfService {
     } else {
       return this.getCultureDiagnosticText(score, level);
     }
+  }
+
+  private generateInsightsPage(doc: any, iaChartData: RadarChartData, culturaChartData: RadarChartData, options: PdfOptions): void {
+    // Calcular pontuações
+    const iaScore = this.calculateScore(iaChartData);
+    const culturaScore = this.calculateScore(culturaChartData);
+    
+    // Garantir que as pontuações foram passadas ou calculadas
+    const finalIaScore = options?.iaScore || iaScore;
+    const finalCulturaScore = options?.culturaScore || culturaScore;
+    
+    // Obter insights usando o diagnostic service
+    const insights = this.diagnosticService.getDetailedInsights(finalIaScore, finalCulturaScore);
+    const recommendations = this.diagnosticService.getRecommendationText(finalIaScore, finalCulturaScore);
+    
+    // Obter níveis
+    const iaLevel = options?.iaLevel || insights.ia_level;
+    const culturaLevel = options?.culturaLevel || insights.cultura_level;
+    
+    // Texto do diagnóstico combinado
+    const diagnosticText = insights.diagnostic_text;
+
+    // Adicionar nova página para insights
+    doc.addPage();
+    
+    // Título dos insights
+    doc.fontSize(18)
+       .font('Helvetica-Bold')
+       .fillColor('#1E2A4A')
+       .text('Diagnóstico e Insights', { align: 'center' })
+       .moveDown(0.5);
+    
+    // Mostrar níveis de maturidade
+    doc.fontSize(14)
+       .text('Níveis de Maturidade', { align: 'left' })
+       .moveDown(0.5);
+    
+    // Desenhar tabela de níveis
+    const startY = doc.y;
+    
+    // Desenhar célula de cabeçalho para IA
+    doc.rect(doc.x, startY, 150, 25)
+       .fill('#1E2A4A');
+    
+    doc.fillColor('white')
+       .text('Maturidade em IA', doc.x + 5, startY + 7);
+    
+    // Desenhar célula com o nível de IA
+    doc.rect(doc.x + 150, startY, 150, 25)
+       .fill('#E6EFF7');
+    
+    const iaLevelColor = finalIaScore >= 34 ? '#006400' : // Verde para nível alto
+                      finalIaScore >= 27 ? '#4682B4' : // Azul para nível bom
+                      finalIaScore >= 18 ? '#FF8C00' : // Laranja para nível médio
+                      '#DC143C'; // Vermelho para nível baixo
+    
+    doc.fillColor(iaLevelColor)
+       .font('Helvetica-Bold')
+       .text(`${iaLevel} (${finalIaScore} pts)`, doc.x + 155, startY + 7);
+    
+    // Desenhar célula de cabeçalho para Cultura
+    doc.rect(doc.x, startY + 25, 150, 25)
+       .fill('#1E2A4A');
+    
+    doc.fillColor('white')
+       .text('Alinhamento Cultural', doc.x + 5, startY + 32);
+    
+    // Desenhar célula com o nível de cultura
+    doc.rect(doc.x + 150, startY + 25, 150, 25)
+       .fill('#E6EFF7');
+    
+    const culturaLevelColor = finalCulturaScore >= 34 ? '#006400' : // Verde para nível alto
+                           finalCulturaScore >= 27 ? '#4682B4' : // Azul para nível bom
+                           finalCulturaScore >= 18 ? '#FF8C00' : // Laranja para nível médio
+                           '#DC143C'; // Vermelho para nível baixo
+    
+    doc.fillColor(culturaLevelColor)
+       .text(`${culturaLevel} (${finalCulturaScore} pts)`, doc.x + 155, startY + 32);
+    
+    doc.moveDown(2);
+    
+    // Mostrar diagnóstico combinado
+    doc.fillColor('#1E2A4A')
+       .fontSize(14)
+       .font('Helvetica-Bold')
+       .text('Diagnóstico Combinado', { align: 'left' })
+       .moveDown(0.5);
+    
+    doc.fontSize(12)
+       .font('Helvetica')
+       .fillColor('#333333')
+       .text(diagnosticText, { align: 'justify' })
+       .moveDown(1.5);
+    
+    // Mostrar recomendações - usar diagnosticService
+    doc.fillColor('#1E2A4A')
+       .fontSize(14)
+       .font('Helvetica-Bold')
+       .text('Pontos Fortes', { align: 'left' })
+       .moveDown(0.5);
+    
+    // Listar pontos fortes
+    recommendations.pontos_fortes.forEach((ponto: string) => {
+      doc.fontSize(12)
+         .font('Helvetica')
+         .fillColor('#333333')
+         .text(`• ${ponto}`, { align: 'left', indent: 10 })
+         .moveDown(0.5);
+    });
+    
+    doc.moveDown(0.5);
+    
+    // Áreas de melhoria
+    doc.fillColor('#1E2A4A')
+       .fontSize(14)
+       .font('Helvetica-Bold')
+       .text('Áreas de Melhoria', { align: 'left' })
+       .moveDown(0.5);
+    
+    // Listar áreas de melhoria
+    recommendations.areas_melhoria.forEach((area: string) => {
+      doc.fontSize(12)
+         .font('Helvetica')
+         .fillColor('#333333')
+         .text(`• ${area}`, { align: 'left', indent: 10 })
+         .moveDown(0.5);
+    });
+    
+    doc.moveDown(0.5);
+    
+    // Recomendações específicas
+    doc.fillColor('#1E2A4A')
+       .fontSize(14)
+       .font('Helvetica-Bold')
+       .text('Recomendações', { align: 'left' })
+       .moveDown(0.5);
+    
+    // Listar recomendações
+    recommendations.recomendacoes.forEach((rec: string) => {
+      doc.fontSize(12)
+         .font('Helvetica')
+         .fillColor('#333333')
+         .text(`• ${rec}`, { align: 'left', indent: 10 })
+         .moveDown(0.5);
+    });
+    
+    if (!recommendations.pontos_fortes.length && !recommendations.areas_melhoria.length && !recommendations.recomendacoes.length) {
+      doc.fontSize(12)
+         .font('Helvetica')
+         .fillColor('#333333')
+         .text('Dados insuficientes para gerar recomendações específicas.', { align: 'left' })
+         .moveDown(0.5);
+    }
+  }
+  
+  private calculateScore(chartData: RadarChartData): number {
+    if (!chartData || !chartData.datasets || chartData.datasets.length === 0) {
+      return 0;
+    }
+    
+    const data = chartData.datasets[0]?.data || [];
+    return data.reduce((sum, val) => sum + (val || 0), 0);
   }
 }

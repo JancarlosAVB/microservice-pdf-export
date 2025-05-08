@@ -200,27 +200,58 @@ export class ChartController {
    */
   public async generateDiagnosticPdf(req: Request, res: Response): Promise<void> {
     try {
-      let { iaChartData, culturaChartData, pdfOptions } = req.body as DiagnosticChartRequest;
+      let { iaChartData, culturaChartData, pdfOptions, rawData, formData } = req.body as DiagnosticChartRequest;
       
-      // Se também foi enviado dados de formulário brutos, processá-los
-      if (req.body.formData) {
-        const formData = req.body.formData;
-        console.log('Dados de formulário recebidos:', JSON.stringify(formData, null, 2));
+      console.log('Dados brutos recebidos:', JSON.stringify({
+        iaChartDataExists: !!iaChartData,
+        culturaChartDataExists: !!culturaChartData,
+        rawDataExists: !!rawData,
+        formDataExists: !!formData
+      }, null, 2));
+
+      // Verificar e usar dados brutos primeiro, se disponíveis
+      if (rawData && rawData.ia && rawData.ia.length > 0) {
+        console.log('Usando dados brutos fornecidos para IA:', rawData.ia);
+        iaChartData.datasets[0].data = rawData.ia.map((val: number) => val || 1);
+      }
+      
+      if (rawData && rawData.cultura && rawData.cultura.length > 0) {
+        console.log('Usando dados brutos fornecidos para Cultura:', rawData.cultura);
+        culturaChartData.datasets[0].data = rawData.cultura.map((val: number) => val || 1);
+      }
+      
+      // Se não temos dados brutos, mas temos formData, processar os dados numéricos
+      else if (formData) {
+        console.log('Processando dados do formulário...');
         
-        // Processar dados para IA se necessário
-        if (iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
-          const processedValues = this.processFormData(formData, 'pergunta_ia_', iaChartData.labels || []);
-          iaChartData.datasets[0].data = processedValues;
-          
-          console.log('Valores processados de IA:', processedValues);
+        // Extrair valores diretos de IA (pergunta_1 a pergunta_10)
+        const iaValues = [];
+        for (let i = 1; i <= 10; i++) {
+          const key = `pergunta_${i}`;
+          const value = formData[key] || 1;
+          // Se o valor já for numérico, use-o diretamente
+          iaValues.push(typeof value === 'number' ? value : this.mapResponseToValue(value));
         }
         
-        // Processar dados para Cultura se necessário
-        if (culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
-          const processedValues = this.processFormData(formData, 'pergunta_cultura_', culturaChartData.labels || []);
-          culturaChartData.datasets[0].data = processedValues;
-          
-          console.log('Valores processados de Cultura:', processedValues);
+        // Extrair valores diretos de Cultura (pergunta_11 a pergunta_20)
+        const culturaValues = [];
+        for (let i = 11; i <= 20; i++) {
+          const key = `pergunta_${i}`;
+          const value = formData[key] || 1;
+          // Se o valor já for numérico, use-o diretamente
+          culturaValues.push(typeof value === 'number' ? value : this.mapResponseToValue(value));
+        }
+        
+        console.log('Valores extraídos de IA:', iaValues);
+        console.log('Valores extraídos de Cultura:', culturaValues);
+        
+        // Aplicar os valores extraídos aos datasets
+        if (iaValues.length === 10 && iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
+          iaChartData.datasets[0].data = iaValues;
+        }
+        
+        if (culturaValues.length === 10 && culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
+          culturaChartData.datasets[0].data = culturaValues;
         }
       }
       
@@ -259,6 +290,18 @@ export class ChartController {
         });
         return;
       }
+      
+      // Garantir que não existam zeros ou valores nulos nos dados
+      iaChartData.datasets.forEach(dataset => {
+        dataset.data = dataset.data.map(value => value || 1);
+      });
+
+      culturaChartData.datasets.forEach(dataset => {
+        dataset.data = dataset.data.map(value => value || 1);
+      });
+      
+      console.log('Dados finais para IA:', iaChartData.datasets[0].data);
+      console.log('Dados finais para Cultura:', culturaChartData.datasets[0].data);
       
       // Gerar o PDF de diagnóstico
       const pdfStream = await this.pdfService.generateDiagnosticPdf(iaChartData, culturaChartData, pdfOptions);
