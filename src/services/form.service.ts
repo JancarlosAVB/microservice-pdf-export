@@ -216,7 +216,7 @@ export class FormService {
             formData.pergunta_9,
             formData.pergunta_10
         ];
-        return this.calculateAverageScore(iaQuestions);
+        return this.calculateTotalScore(iaQuestions);
     }
 
     private calculateCulturaScore(formData: FormData): number {
@@ -232,12 +232,11 @@ export class FormService {
             formData.pergunta_19,
             formData.pergunta_20
         ];
-        return this.calculateAverageScore(culturaQuestions);
+        return this.calculateTotalScore(culturaQuestions);
     }
 
-    private calculateAverageScore(scores: number[]): number {
-        const sum = scores.reduce((acc, score) => acc + score, 0);
-        return sum / scores.length;
+    private calculateTotalScore(scores: number[]): number {
+        return scores.reduce((acc, score) => acc + score, 0);
     }
 
     private getLevel(score: number, type: 'ia' | 'cultura'): string {
