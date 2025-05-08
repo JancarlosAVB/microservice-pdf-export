@@ -1,4 +1,4 @@
-interface FormData {
+export interface FormData {
     submission_id: number;
     empresa: string;
     // Campos IA
@@ -25,18 +25,18 @@ interface FormData {
     pergunta_20: number;
 }
 
-interface Variation {
+export interface Variation {
     text: string;
     score: number;
     category: string;
 }
 
-interface LevelRange {
+export interface LevelRange {
     min: number;
     max: number;
 }
 
-interface DiagnosticLevels {
+export interface DiagnosticLevels {
     [key: string]: LevelRange;
 }
 

@@ -4,9 +4,11 @@ import { config } from './config';
 import chartRoutes from './routes/chart.routes';
 import formRoutes from './routes/form.routes';
 import { errorHandler, notFoundHandler } from './utils/error-handler';
+import { FormController } from './controllers/form.controller';
 
 // Inicializar o aplicativo Express
 const app = express();
+const formController = new FormController();
 
 // Middleware
 app.use(cors(config.corsOptions));
@@ -30,6 +32,12 @@ app.get('/health', (req, res) => {
     environment: config.nodeEnv,
     version: process.env.npm_package_version || '1.0.0'
   });
+});
+
+// Rota direta para compatibilidade com WordPress
+app.post('/api/diagnostic-pdf', async (req, res) => {
+  console.log('Requisição recebida na rota compatível com WordPress');
+  await formController.processFormData(req, res);
 });
 
 // Rotas do microserviço
@@ -58,4 +66,10 @@ app.listen(PORT, () => {
   console.log(`Microserviço de exportação de PDF rodando na porta ${PORT}`);
   console.log(`Ambiente: ${config.nodeEnv}`);
   console.log(`CORS: ${config.corsOptions.origin === '*' ? 'Permitindo todas as origens' : 'Origins restritos'}`);
+  console.log('Rotas disponíveis:');
+  console.log('- /health (GET)');
+  console.log('- /api/diagnostic-pdf (POST)');
+  console.log('- /api/forms/diagnostic-pdf (POST)');
+  console.log('- /api/forms/variations (POST)');
+  console.log('- /api/charts/* (vários endpoints)');
 }); 
