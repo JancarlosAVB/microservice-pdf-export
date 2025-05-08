@@ -5,6 +5,7 @@ import { RadarChartData, PdfOptions, ChartDataset } from '../interfaces/chart.in
 import { Readable } from 'stream';
 import * as fs from 'fs';
 import * as path from 'path';
+import { FormService } from './form.service';
 
 export class PdfService {
   private chartService: ChartService;
@@ -301,23 +302,6 @@ export class PdfService {
     // Usar as pontuações já calculadas anteriormente
     const analysis = this.analyzeCombination(iaScore, culturaScore);
     
-    // Bulleted list como mostrado na imagem de referência
-    const bulletPoints = [
-      'Sua empresa utiliza a IA de forma estruturada e conta com uma cultura que apoia ativamente a inovação e a colaboração.',
-      'Mesmo com um bom equilíbrio entre tecnologia e cultura, aprimorar a escalabilidade e garantir a continuidade dos investimentos pode impulsionar os resultados.',
-      'O próximo passo é consolidar processos, fomentar a inovação contínua e implementar programas de reconhecimento para manter a competitividade.'
-    ];
-    
-    // Adicionar cada item da lista com bullet point
-    bulletPoints.forEach(point => {
-      doc.fontSize(12)
-         .font('Helvetica')
-         .fillColor('#333333')
-         .text('•', 60, doc.y, { continued: true })
-         .text(' ' + point, { width: doc.page.width - 140, align: 'left' })
-         .moveDown(1);
-    });
-    
     // Cálculo para dimensionamento do PDF
     const pageWidth = pageOrientation === 'portrait' ? 
       (pageSize === 'A4' ? 595.28 : 612) : 
@@ -325,116 +309,36 @@ export class PdfService {
     
     const margin = 60; // Margem ajustada para 60
     
-    // Adicionar diagnóstico de cultura
-    doc.fontSize(12)
-      .font('Helvetica')
-      .fillColor('#333333')
-      .text(this.getCultureDiagnosticText(options.culturaScore || 0, culturaLevel), {
-        align: 'justify',
-        width: pageWidth - (margin * 2)
-      })
-      .moveDown(1);
+    // Obter o texto "O que isso significa para sua empresa?" a partir do FormService
+    const formService = new FormService();
+    const diagnosticKey = `${iaLevel}/${culturaLevel}`;
     
+    // Buscar o companyMeaning correto baseado na combinação de níveis no FormService
+    // Usar a propriedade diagnostic.meaning que já é retornada corretamente pelo FormService
+    const processedData = formService.processFormData({
+      submission_id: 0,
+      empresa: options.companyName || 'Empresa',
+      pergunta_1: 0, pergunta_2: 0, pergunta_3: 0, pergunta_4: 0, pergunta_5: 0,
+      pergunta_6: 0, pergunta_7: 0, pergunta_8: 0, pergunta_9: 0, pergunta_10: 0,
+      pergunta_11: 0, pergunta_12: 0, pergunta_13: 0, pergunta_14: 0, pergunta_15: 0,
+      pergunta_16: 0, pergunta_17: 0, pergunta_18: 0, pergunta_19: 0, pergunta_20: 0
+    }).then(result => {
+      // Usar o bulletPoints do resultado processado
+      const bulletPoints = result.diagnostic.meaning;
       
-    // Adicionar diagnóstico combinado se existir
-    if (analysis.diagnostic_text && !options.skipCombinedAnalysis) {
-      doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#333333')
-        .text('Análise Combinada', { align: 'left' })
-        .moveDown(0.5);
-        
-      doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333')
-        .text(analysis.diagnostic_text, {
-          align: 'justify',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(2);
-    } else {
-      doc.moveDown(1);
-    }
-    
-    // Adicionar nova página para recomendações
-    doc.addPage();
-    
-    // Adicionar seção de recomendações
-    doc.fontSize(18)
-      .font('Helvetica-Bold')
-      .fillColor('#333333')
-      .text('Recomendações e Próximos Passos', { align: 'left' })
-      .moveDown(1);
-    
-    // Usar recomendações da opção ou da análise combinada
-    const recommendations = options.recommendations || analysis.recommendations;
-    
-    // Adicionar pontos fortes se disponíveis
-    if (recommendations?.pontosFortes && recommendations.pontosFortes.length > 0) {
-      doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#4CAF50')
-        .text('Pontos Fortes', { align: 'left' })
-        .moveDown(0.5);
-      
-      doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333');
-      
-      recommendations.pontosFortes.forEach((ponto: string, index: number) => {
-        doc.text(`${index + 1}. ${ponto}`, {
-          align: 'left',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(0.5);
+      // Adicionar cada item da lista com bullet point
+      bulletPoints.forEach(point => {
+        doc.fontSize(12)
+           .font('Helvetica')
+           .fillColor('#333333')
+           .text('•', 60, doc.y, { continued: true })
+           .text(' ' + point, { width: doc.page.width - 140, align: 'left' })
+           .moveDown(1);
       });
       
-      doc.moveDown(1);
-    }
-    
-    // Adicionar áreas de melhoria se disponíveis
-    if (recommendations?.areasMelhoria && recommendations.areasMelhoria.length > 0) {
-      doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#FF9800')
-        .text('Áreas para Melhoria', { align: 'left' })
-        .moveDown(0.5);
-      
-      doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333');
-      
-      recommendations.areasMelhoria.forEach((area: string, index: number) => {
-        doc.text(`${index + 1}. ${area}`, {
-          align: 'left',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(0.5);
-      });
-      
-      doc.moveDown(1);
-    }
-    
-    // Adicionar recomendações específicas se disponíveis
-    if (recommendations?.recomendacoes && recommendations.recomendacoes.length > 0) {
-      doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#1a73e8')
-        .text('Recomendações Específicas', { align: 'left' })
-        .moveDown(0.5);
-      
-      doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333');
-      
-      recommendations.recomendacoes.forEach((recomendacao: string, index: number) => {
-        doc.text(`${index + 1}. ${recomendacao}`, {
-          align: 'left',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(0.5);
-      });
-    }
+      // Continuar o fluxo do PDF após processar os bullet points
+      this.continuePdfGeneration(doc, options, culturaScore, culturaLevel, analysis, pageWidth, margin);
+    });
     
     // Finalizar o documento
     doc.end();
@@ -717,6 +621,127 @@ export class PdfService {
       return this.getIADiagnosticText(score, level);
     } else {
       return this.getCultureDiagnosticText(score, level);
+    }
+  }
+
+  private continuePdfGeneration(
+    doc: typeof PDFDocument.prototype, 
+    options: PdfOptions, 
+    culturaScore: number, 
+    culturaLevel: string, 
+    analysis: any, 
+    pageWidth: number, 
+    margin: number
+  ) {
+    // Adicionar diagnóstico de cultura
+    doc.fontSize(12)
+      .font('Helvetica')
+      .fillColor('#333333')
+      .text(this.getCultureDiagnosticText(culturaScore, culturaLevel), {
+        align: 'justify',
+        width: pageWidth - (margin * 2)
+      })
+      .moveDown(1);
+    
+      
+    // Adicionar diagnóstico combinado se existir
+    if (analysis.diagnostic_text && !options.skipCombinedAnalysis) {
+      doc.fontSize(14)
+        .font('Helvetica-Bold')
+        .fillColor('#333333')
+        .text('Análise Combinada', { align: 'left' })
+        .moveDown(0.5);
+        
+      doc.fontSize(12)
+        .font('Helvetica')
+        .fillColor('#333333')
+        .text(analysis.diagnostic_text, {
+          align: 'justify',
+          width: pageWidth - (margin * 2)
+        })
+        .moveDown(2);
+    } else {
+      doc.moveDown(1);
+    }
+    
+    // Adicionar nova página para recomendações
+    doc.addPage();
+    
+    // Adicionar seção de recomendações
+    doc.fontSize(18)
+      .font('Helvetica-Bold')
+      .fillColor('#333333')
+      .text('Recomendações e Próximos Passos', { align: 'left' })
+      .moveDown(1);
+    
+    // Usar recomendações da opção ou da análise combinada
+    const recommendations = options.recommendations || analysis.recommendations;
+    
+    // Adicionar pontos fortes se disponíveis
+    if (recommendations?.pontosFortes && recommendations.pontosFortes.length > 0) {
+      doc.fontSize(14)
+        .font('Helvetica-Bold')
+        .fillColor('#4CAF50')
+        .text('Pontos Fortes', { align: 'left' })
+        .moveDown(0.5);
+      
+      doc.fontSize(12)
+        .font('Helvetica')
+        .fillColor('#333333');
+      
+      recommendations.pontosFortes.forEach((ponto: string, index: number) => {
+        doc.text(`${index + 1}. ${ponto}`, {
+          align: 'left',
+          width: pageWidth - (margin * 2)
+        })
+        .moveDown(0.5);
+      });
+      
+      doc.moveDown(1);
+    }
+    
+    // Adicionar áreas de melhoria se disponíveis
+    if (recommendations?.areasMelhoria && recommendations.areasMelhoria.length > 0) {
+      doc.fontSize(14)
+        .font('Helvetica-Bold')
+        .fillColor('#FF9800')
+        .text('Áreas para Melhoria', { align: 'left' })
+        .moveDown(0.5);
+      
+      doc.fontSize(12)
+        .font('Helvetica')
+        .fillColor('#333333');
+      
+      recommendations.areasMelhoria.forEach((area: string, index: number) => {
+        doc.text(`${index + 1}. ${area}`, {
+          align: 'left',
+          width: pageWidth - (margin * 2)
+        })
+        .moveDown(0.5);
+      });
+      
+      doc.moveDown(1);
+    }
+    
+    // Adicionar recomendações específicas se disponíveis
+    if (recommendations?.recomendacoes && recommendations.recomendacoes.length > 0) {
+      doc.fontSize(14)
+        .font('Helvetica-Bold')
+        .fillColor('#1a73e8')
+        .text('Recomendações Específicas', { align: 'left' })
+        .moveDown(0.5);
+      
+      doc.fontSize(12)
+        .font('Helvetica')
+        .fillColor('#333333');
+      
+      recommendations.recomendacoes.forEach((recomendacao: string, index: number) => {
+        doc.text(`${index + 1}. ${recomendacao}`, {
+          align: 'left',
+          width: pageWidth - (margin * 2)
+        })
+        .moveDown(0.5);
+      });
     }
   }
 }

@@ -32,6 +32,7 @@ export interface PdfOptions {
   iaLevel?: string;
   culturaLevel?: string;
   company?: string;
+  companyName?: string; // Nome da empresa para exibição no PDF
   diagnosticText?: string;
   skipCombinedAnalysis?: boolean; // Se true, pula a exibição da análise combinada
   recommendations?: {
