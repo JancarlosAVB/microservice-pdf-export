@@ -50,21 +50,4 @@ export interface DiagnosticChartRequest {
   iaChartData: RadarChartData;
   culturaChartData: RadarChartData;
   pdfOptions?: PdfOptions;
-  rawData?: {
-    ia: number[];
-    cultura: number[];
-  };
-  formData?: Record<string, any>;
-  analysis?: {
-    iaLevel?: string;
-    culturaLevel?: string;
-    combinedKey?: string;
-    diagnosticText?: string;
-    companyMeaning?: string[];
-    recommendations?: {
-      pontos_fortes?: string[];
-      areas_melhoria?: string[];
-      recomendacoes?: string[];
-    };
-  };
 }

@@ -5,57 +5,6 @@ import { ChartRequest, DiagnosticChartRequest } from '../interfaces/chart.interf
 export class ChartController {
   private pdfService: PdfService;
 
-  /**
-   * Endpoint para retornar análise completa do relatório (JSON)
-   */
-  public async getDiagnosticReport(req: Request, res: Response): Promise<void> {
-    try {
-      const submissionId = req.params.submission_id;
-      // Simulação de banco: buscar dados do submissionId
-      // Substitua por busca real no futuro
-      const submissionsDb = require('../../test-diagnostico.json');
-      const submission = submissionsDb[submissionId];
-      if (!submission) {
-        res.status(404).json({ success: false, message: 'Submissão não encontrada.' });
-        return;
-      }
-      // Processar os dados do formulário
-      const iaLabels = submission.iaChartData?.labels || [];
-      const culturaLabels = submission.culturaChartData?.labels || [];
-      const iaValues = this.processFormData(submission.formData, 'pergunta_ia_', iaLabels);
-      const culturaValues = this.processFormData(submission.formData, 'pergunta_cultura_', culturaLabels);
-      // Calcular scores e níveis
-      const iaScore = iaValues.reduce((sum, v) => sum + (v || 0), 0);
-      const culturaScore = culturaValues.reduce((sum, v) => sum + (v || 0), 0);
-      const iaLevel = this.pdfService['calculateMaturityLevel'](iaScore);
-      const culturaLevel = this.pdfService['calculateCultureLevel'](culturaScore);
-      // Insights dinâmicos (exemplo: pode ser expandido com lógica real)
-      const insights: string[] = [
-        this.pdfService.getIADiagnosticText(iaScore, iaLevel),
-        this.pdfService.getCultureDiagnosticText(culturaScore, culturaLevel)
-      ];
-      // Recomendações detalhadas
-      const recommendations: { pontosFortes: string[], areasMelhoria: string[], recomendacoes: string[] } = this.pdfService['getRecommendationsForCombination'](iaLevel, culturaLevel);
-      const diagnosticText: string = this.pdfService['analyzeCombination'](iaScore, culturaScore)?.diagnostic_text || '';
-      res.json({
-        success: true,
-        ia_score: iaScore,
-        cultura_score: culturaScore,
-        ia_level: iaLevel,
-        cultura_level: culturaLevel,
-        insights,
-        recommendations,
-        diagnostic_text: diagnosticText,
-        company: submission.company || '',
-        pdf_url: submission.pdf_url || '',
-        form_data: submission.formData || {},
-        message: ''
-      });
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Erro ao processar relatório', error: error instanceof Error ? error.message : error });
-    }
-  }
-
   constructor() {
     this.pdfService = new PdfService();
   }
@@ -66,113 +15,8 @@ export class ChartController {
    * @returns Valor numérico entre 1 e 4
    */
   private mapResponseToValue(textResponse: string): number {
-    // Mapeamento de respostas específicas do formulário para valores
-    const formResponseMap: Record<string, number> = {
-      // Perguntas 1-10 (IA)
-      'Não utiliza e não tem planos': 1,
-      'Tem interesse, mas ainda não implementou': 2,
-      'Utiliza de forma limitada em alguns processos': 3,
-      'Utiliza de forma estruturada e estratégica em diversas áreas': 4,
-      
-      'Nenhuma área': 1,
-      '1 a 2 áreas': 2,
-      '3 a 4 áreas': 3,
-      '5 ou mais áreas': 4,
-      
-      'Falta de interesse ou conhecimento': 1,
-      'Cultura organizacional resistente': 2,
-      'Dificuldade técnica ou de integração': 3,
-      'Questões de investimento e custo elevado': 4,
-      
-      'Não há nenhum projeto de IA aplicado': 1,
-      'Benefícios iniciais sem impacto estratégico': 2,
-      'Melhoria operacional perceptível': 3,
-      'Impacto estratégico e financeiro comprovado': 4,
-      
-      'Sem processo definido': 1,
-      'Avaliações pontuais e reativas': 2,
-      'Testes-piloto antes da implementação': 3,
-      'Processo estratégico e estruturado': 4,
-      
-      'Sem planos de expansão': 1,
-      'Pouca escalabilidade devido a limitações': 2,
-      'Potencial de crescimento moderado': 3,
-      'Alta capacidade de expansão e integração': 4,
-      
-      'Totalmente desconectada': 1,
-      'Integração incipiente': 2,
-      'Integrada em áreas-chave': 3,
-      'Integração completa e sistêmica': 4,
-      
-      'Nenhuma capacitação': 1,
-      'Capacitação limitada e informal': 2,
-      'Treinamentos periódicos e direcionados': 3,
-      'Equipe altamente capacitada e atualizada': 4,
-      
-      'Investimento inexistente ou insignificante': 1,
-      'Investimento pontual (IA)': 2,
-      'Investimento regular, mas moderado': 3,
-      'Investimento robusto e contínuo (IA)': 4,
-      
-      'Não é considerada na estratégia': 1,
-      'Considerada de forma pontual': 2,
-      'Presente em alguns planos estratégicos': 3,
-      'Central na estratégia e visão de futuro': 4,
-      
-      // Perguntas 11-20 (Cultura)
-      'Evita mudanças': 1,
-      'Aceita mudanças somente quando forçada': 2,
-      'Adota mudanças de forma reativa': 3,
-      'Abraça mudanças de forma proativa': 4,
-      
-      'Não participam': 1,
-      'Participação mínima ou pontual': 2,
-      'Participação de alguns colaboradores': 3,
-      'Engajamento amplo e colaborativo': 4,
-      
-      'Ambiente competitivo e individualista': 1,
-      'Algumas iniciativas isoladas': 2,
-      'Ambiente colaborativo com restrições': 3,
-      'Ambiente fortemente colaborativo e de aprendizado contínuo': 4,
-      
-      'Erros são penalizados': 1,
-      'Experimentação é desencorajada': 2,
-      'Aceita experimentação com cautela': 3,
-      'Vê os erros como oportunidades de aprendizado': 4,
-      
-      'Não há incentivo': 1,
-      'Incentivos esporádicos': 2,
-      'Incentivo moderado': 3,
-      'Incentivo contínuo e estruturado': 4,
-      
-      'Comunicação inexistente ou ineficaz': 1,
-      'Comunicação esporádica': 2,
-      'Comunicação regular, mas não sistemática': 3,
-      'Comunicação fluida e integrada': 4,
-      
-      'Não investe': 1,
-      'Investimento pontual (cultura)': 2,
-      'Investimento regular, porém limitado': 3,
-      'Investimento robusto e contínuo (cultura)': 4,
-      
-      'Não há reconhecimento': 1,
-      'Reconhecimento eventual': 2,
-      'Reconhecimento em áreas específicas': 3,
-      'Reconhecimento sistemático e motivador': 4,
-      
-      'Feedback ausente ou negativo': 1,
-      'Feedback informal e esporádico': 2,
-      'Feedback regular, mas não estruturado': 3,
-      'Feedback contínuo e estruturado': 4,
-      
-      'Desconexão total': 1,
-      'Entendimento limitado': 2,
-      'Alinhamento parcial': 3,
-      'Total compreensão e engajamento': 4
-    };
-    
-    // Mapeamento de termos genéricos para valores
-    const genericResponseMap: Record<string, number> = {
+    // Mapeamento de respostas comuns para valores
+    const responseMap: Record<string, number> = {
       // Respostas negativas (baixo valor)
       'não utiliza': 1,
       'inexistente': 1,
@@ -225,33 +69,24 @@ export class ChartController {
     // Verificar correspondencias parciais em texto de respostas longas
     if (!textResponse) return 1; // Valor padrão para respostas vazias
     
-    // Verificação direta para opções de formulário
-    if (formResponseMap[textResponse] !== undefined) {
-      console.log(`Mapeamento exato encontrado para '${textResponse}': ${formResponseMap[textResponse]}`);
-      return formResponseMap[textResponse];
-    }
-    
     const lowerText = textResponse.toLowerCase();
     
-    // Verificar correspondências exatas nos termos genéricos
-    if (genericResponseMap[lowerText]) return genericResponseMap[lowerText];
+    // Verificar correspondências exatas primeiro
+    if (responseMap[lowerText]) return responseMap[lowerText];
     
-    // Verificar correspondências parciais nos termos genéricos
-    for (const [key, value] of Object.entries(genericResponseMap)) {
+    // Verificar correspondências parciais
+    for (const [key, value] of Object.entries(responseMap)) {
       if (lowerText.includes(key)) {
         return value;
       }
     }
     
     // Detecções mais específicas baseadas no contexto do log
-    if (lowerText.includes('não utiliza') || lowerText.includes('sem')) return 1;
-    if (lowerText.includes('tem interesse') || lowerText.includes('forma limitada')) return 2;
-    if (lowerText.includes('impacto estratégico') || lowerText.includes('estruturada')) return 4;
+    if (lowerText.includes('utiliza de forma limitada')) return 2;
+    if (lowerText.includes('impacto estratégico')) return 4;
     if (lowerText.includes('integração completa')) return 4;
     if (lowerText.includes('capacitada')) return 4;
-    if (lowerText.includes('abraça mudanças')) return 4;
-    
-    console.log(`Não foi possível mapear '${textResponse}', usando valor padrão 2`);
+    if (lowerText.includes('abraça mudanças')) return 3;
     
     // Valor padrão se não houver correspondência
     return 2;
@@ -267,55 +102,25 @@ export class ChartController {
   private processFormData(formData: Record<string, any>, prefix: string, labels: string[]): number[] {
     const values: number[] = [];
     
-    console.log(`Processando dados de ${prefix} com ${Object.keys(formData).length} campos no formulário`);
-    
-    // Extração baseada no tipo de perguntas
-    if (prefix === 'ia') {
+    // Extração baseada nos padrões do log
+    if (prefix === 'pergunta_ia_') {
       // Extrai valores das perguntas 1 a 10 de IA
       for (let i = 1; i <= 10; i++) {
         const key = `pergunta_${i}`;
-        console.log(`[IA ${i}] Processando ${key}: ${formData[key] || 'não encontrado'}`);
-        
-        // Verificar se o valor é um inteiro direto ou texto que precisa ser mapeado
         if (formData[key]) {
-          if (typeof formData[key] === 'number' || !isNaN(Number(formData[key]))) {
-            // Se for um número ou string numérica, converter diretamente
-            const numValue = Number(formData[key]);
-            values.push(numValue >= 1 && numValue <= 4 ? numValue : 1);
-            console.log(`[IA ${i}] Valor numérico: ${numValue}`);
-          } else {
-            // Se for texto, mapear para valor
-            const mappedValue = this.mapResponseToValue(formData[key]);
-            values.push(mappedValue);
-            console.log(`[IA ${i}] Texto mapeado: '${formData[key]}' => ${mappedValue}`);
-          }
+          values.push(this.mapResponseToValue(formData[key]));
         } else {
           values.push(1); // Valor padrão se a pergunta não for encontrada
-          console.log(`[IA ${i}] Não encontrado, usando valor padrão 1`);
         }
       }
-    } else if (prefix === 'cultura') {
+    } else if (prefix === 'pergunta_cultura_') {
       // Extrai valores das perguntas 11 a 20 de Cultura
       for (let i = 11; i <= 20; i++) {
         const key = `pergunta_${i}`;
-        console.log(`[Cultura ${i-10}] Processando ${key}: ${formData[key] || 'não encontrado'}`);
-        
-        // Verificar se o valor é um inteiro direto ou texto que precisa ser mapeado
         if (formData[key]) {
-          if (typeof formData[key] === 'number' || !isNaN(Number(formData[key]))) {
-            // Se for um número ou string numérica, converter diretamente
-            const numValue = Number(formData[key]);
-            values.push(numValue >= 1 && numValue <= 4 ? numValue : 1);
-            console.log(`[Cultura ${i-10}] Valor numérico: ${numValue}`);
-          } else {
-            // Se for texto, mapear para valor
-            const mappedValue = this.mapResponseToValue(formData[key]);
-            values.push(mappedValue);
-            console.log(`[Cultura ${i-10}] Texto mapeado: '${formData[key]}' => ${mappedValue}`);
-          }
+          values.push(this.mapResponseToValue(formData[key]));
         } else {
           values.push(1); // Valor padrão se a pergunta não for encontrada
-          console.log(`[Cultura ${i-10}] Não encontrado, usando valor padrão 1`);
         }
       }
     }
@@ -363,44 +168,16 @@ export class ChartController {
         return;
       }
       
-      try {
-        // Gerar o PDF
-        const pdfStream = await this.pdfService.generateChartPdf(chartData, pdfOptions);
-        
-        // Configurar headers para download do PDF
-        const fileName = pdfOptions?.fileName || 'radar-chart.pdf';
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
-        
-        // Corrigindo o problema do pipe
-        pdfStream.on('data', (chunk: Buffer) => {
-          res.write(chunk);
-        });
-        
-        pdfStream.on('end', () => {
-          res.end();
-        });
-        
-        pdfStream.on('error', (err: Error) => {
-          console.error('Erro ao processar o stream de PDF:', err);
-          if (!res.headersSent) {
-            res.status(500).json({
-              success: false,
-              message: 'Erro ao processar o stream de PDF',
-              error: err instanceof Error ? err.message : 'Erro desconhecido'
-            });
-          }
-        });
-      } catch (pdfError) {
-        console.error('Erro ao gerar PDF:', pdfError);
-        if (!res.headersSent) {
-          res.status(500).json({
-            success: false, 
-            message: 'Erro ao gerar o PDF',
-            error: pdfError instanceof Error ? pdfError.message : 'Erro desconhecido'
-          });
-        }
-      }
+      // Gerar o PDF
+      const pdfStream = await this.pdfService.generatePdf(chartData, pdfOptions);
+      
+      // Configurar headers para download do PDF
+      const fileName = pdfOptions?.fileName || 'radar-chart.pdf';
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+      
+      // Enviar o PDF como resposta
+      pdfStream.pipe(res);
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       
@@ -423,89 +200,27 @@ export class ChartController {
    */
   public async generateDiagnosticPdf(req: Request, res: Response): Promise<void> {
     try {
-      let { iaChartData, culturaChartData, pdfOptions = {}, rawData, formData, analysis } = req.body as DiagnosticChartRequest;
+      let { iaChartData, culturaChartData, pdfOptions } = req.body as DiagnosticChartRequest;
       
-      console.log('Dados brutos recebidos:', JSON.stringify({
-        iaChartDataExists: !!iaChartData,
-        culturaChartDataExists: !!culturaChartData,
-        rawDataExists: !!rawData,
-        formDataExists: !!formData,
-        analysisExists: !!analysis
-      }, null, 2));
-
-      // Verificar primeiro se recebemos o flag _use_direct_values do WordPress
-      if (formData && formData._use_direct_values === true) {
-        console.log('Detectados valores diretos enviados pelo WordPress!');
+      // Se também foi enviado dados de formulário brutos, processá-los
+      if (req.body.formData) {
+        const formData = req.body.formData;
+        console.log('Dados de formulário recebidos:', JSON.stringify(formData, null, 2));
         
-        // Usar os valores pré-calculados do WordPress se disponíveis
-        if (formData._ia_values && Array.isArray(formData._ia_values) && 
-            iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
-          console.log('Usando valores IA diretos:', formData._ia_values);
-          iaChartData.datasets[0].data = formData._ia_values;
-        }
-        
-        if (formData._cultura_values && Array.isArray(formData._cultura_values) && 
-            culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
-          console.log('Usando valores Cultura diretos:', formData._cultura_values);
-          culturaChartData.datasets[0].data = formData._cultura_values;
-        }
-        
-        // Se temos níveis definidos, usar nas opções do PDF
-        if (formData._ia_level && !pdfOptions.iaLevel) {
-          console.log('Usando nível IA enviado pelo WordPress:', formData._ia_level);
-          pdfOptions.iaLevel = formData._ia_level;
-        }
-        
-        if (formData._cultura_level && !pdfOptions.culturaLevel) {
-          console.log('Usando nível Cultura enviado pelo WordPress:', formData._cultura_level);
-          pdfOptions.culturaLevel = formData._cultura_level;
-        }
-      }
-      // Verificar e usar dados brutos, se disponíveis
-      else if (rawData && rawData.ia && rawData.ia.length > 0) {
-        console.log('Usando dados brutos fornecidos para IA:', rawData.ia);
+        // Processar dados para IA se necessário
         if (iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
-          iaChartData.datasets[0].data = rawData.ia.map((val: number) => val || 1);
+          const processedValues = this.processFormData(formData, 'pergunta_ia_', iaChartData.labels || []);
+          iaChartData.datasets[0].data = processedValues;
+          
+          console.log('Valores processados de IA:', processedValues);
         }
         
-        if (rawData && rawData.cultura && rawData.cultura.length > 0 && 
-            culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
-          console.log('Usando dados brutos fornecidos para Cultura:', rawData.cultura);
-          culturaChartData.datasets[0].data = rawData.cultura.map((val: number) => val || 1);
-        }
-      }
-      // Se não temos valores diretos, mas temos formData, processar os dados numéricos
-      else if (formData) {
-        console.log('Processando dados do formulário...');
-        
-        // Extrair valores diretos de IA (pergunta_1 a pergunta_10)
-        const iaValues = [];
-        for (let i = 1; i <= 10; i++) {
-          const key = `pergunta_${i}`;
-          const value = formData[key] || 1;
-          // Se o valor já for numérico, use-o diretamente
-          iaValues.push(typeof value === 'number' ? value : this.mapResponseToValue(value));
-        }
-        
-        // Extrair valores diretos de Cultura (pergunta_11 a pergunta_20)
-        const culturaValues = [];
-        for (let i = 11; i <= 20; i++) {
-          const key = `pergunta_${i}`;
-          const value = formData[key] || 1;
-          // Se o valor já for numérico, use-o diretamente
-          culturaValues.push(typeof value === 'number' ? value : this.mapResponseToValue(value));
-        }
-        
-        console.log('Valores extraídos de IA:', iaValues);
-        console.log('Valores extraídos de Cultura:', culturaValues);
-        
-        // Aplicar os valores extraídos aos datasets
-        if (iaValues.length === 10 && iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
-          iaChartData.datasets[0].data = iaValues;
-        }
-        
-        if (culturaValues.length === 10 && culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
-          culturaChartData.datasets[0].data = culturaValues;
+        // Processar dados para Cultura se necessário
+        if (culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
+          const processedValues = this.processFormData(formData, 'pergunta_cultura_', culturaChartData.labels || []);
+          culturaChartData.datasets[0].data = processedValues;
+          
+          console.log('Valores processados de Cultura:', processedValues);
         }
       }
       
@@ -545,68 +260,16 @@ export class ChartController {
         return;
       }
       
-      // Garantir que não existam zeros ou valores nulos nos dados
-      iaChartData.datasets.forEach(dataset => {
-        dataset.data = dataset.data.map(value => value || 1);
-      });
-
-      culturaChartData.datasets.forEach(dataset => {
-        dataset.data = dataset.data.map(value => value || 1);
-      });
+      // Gerar o PDF de diagnóstico
+      const pdfStream = await this.pdfService.generateDiagnosticPdf(iaChartData, culturaChartData, pdfOptions);
       
-      console.log('Dados finais para IA:', iaChartData.datasets[0].data);
-      console.log('Dados finais para Cultura:', culturaChartData.datasets[0].data);
+      // Configurar headers para download do PDF
+      const fileName = pdfOptions?.fileName || 'diagnostico-ia-cultura.pdf';
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
       
-      // Incluir dados de análise enviados pelo plugin, se disponíveis
-      if (analysis) {
-        if (analysis.iaLevel) pdfOptions.iaLevel = analysis.iaLevel;
-        if (analysis.culturaLevel) pdfOptions.culturaLevel = analysis.culturaLevel;
-        if (analysis.diagnosticText) pdfOptions.diagnosticText = analysis.diagnosticText;
-        
-        // Incluir nome da empresa se disponível
-        if (formData && formData.empresa) {
-          pdfOptions.company = formData.empresa;
-        }
-      }
-      
-      try {
-        // Gerar o PDF de diagnóstico
-        const pdfStream = await this.pdfService.generateDiagnosticPdf(iaChartData, culturaChartData, pdfOptions, formData);
-        
-        // Configurar headers para download do PDF
-        const fileName = pdfOptions.fileName || 'diagnostico-ia-cultura.pdf';
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
-        
-        // Corrigindo o problema do pipe
-        pdfStream.on('data', (chunk: Buffer) => {
-          res.write(chunk);
-        });
-        
-        pdfStream.on('end', () => {
-          res.end();
-        });
-        
-        pdfStream.on('error', (err: Error) => {
-          console.error('Erro ao processar o stream de PDF:', err);
-          if (!res.headersSent) {
-            res.status(500).json({
-              success: false,
-              message: 'Erro ao processar o stream de PDF',
-              error: err instanceof Error ? err.message : 'Erro desconhecido'
-            });
-          }
-        });
-      } catch (pdfError) {
-        console.error('Erro ao gerar PDF:', pdfError);
-        if (!res.headersSent) {
-          res.status(500).json({
-            success: false,
-            message: 'Erro ao gerar o PDF',
-            error: pdfError instanceof Error ? pdfError.message : 'Erro desconhecido'
-          });
-        }
-      }
+      // Enviar o PDF como resposta
+      pdfStream.pipe(res);
     } catch (error) {
       console.error('Erro ao gerar PDF de diagnóstico:', error);
       
