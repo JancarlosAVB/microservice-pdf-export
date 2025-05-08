@@ -237,7 +237,7 @@ export class PdfService {
     const fullWidth = doc.page.width - 80; // 40px de margem de cada lado
     
     // Seção de Inteligência Artificial
-    doc.fontSize(14)
+    doc.fontSize(38)
        .fillColor('#333333')
        .font('Helvetica-Bold')
        .text('NÍVEL DE MATURIDADE EM INTELIGÊNCIA ARTIFICIAL', 40, doc.y + 10, { width: fullWidth, align: 'center' });
