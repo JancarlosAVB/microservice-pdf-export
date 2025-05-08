@@ -50,4 +50,5 @@ export interface DiagnosticChartRequest {
   iaChartData: RadarChartData;
   culturaChartData: RadarChartData;
   pdfOptions?: PdfOptions;
+  formData?: Record<string, any>; // Dados do formulário para processamento
 }

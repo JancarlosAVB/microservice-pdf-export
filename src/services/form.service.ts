@@ -175,7 +175,7 @@ export class FormService {
             const processedData = await this.analyzeFormData(formData, iaScore, culturaScore, iaLevel, culturaLevel);
             
             // Gera variações baseadas nos dados processados
-            const variations = await this.generateVariations(formData, iaScore, culturaScore);
+            const variations = await this.generateVariations(formData);
             
             return {
                 processedData,
@@ -439,21 +439,66 @@ export class FormService {
         return recommendations[section][level] || ['Não foi possível gerar recomendações específicas.'];
     }
 
-    async generateVariations(formData: FormData, iaScore: number, culturaScore: number): Promise<Variation[]> {
+    /**
+     * Gera as variações de texto com base nos níveis
+     */
+    generateVariations(formData: FormData): Variation[] {
+        const iaScore = this.calculateIAScore(formData);
+        const culturaScore = this.calculateCulturaScore(formData);
+        
+        console.log(`Gerando variações para scores: IA=${iaScore}, Cultura=${culturaScore}`);
+        
+        // Níveis de maturidade para IA
         const iaLevel = this.getLevel(iaScore, 'ia');
+        
+        // Níveis de maturidade para Cultura
         const culturaLevel = this.getLevel(culturaScore, 'cultura');
-        const diagnosticKey = `${iaLevel}/${culturaLevel}`;
-
+        
+        console.log(`Níveis determinados: IA=${iaLevel}, Cultura=${culturaLevel}`);
+        
+        // Obter significado específico para a combinação de níveis
+        const diagMeaning = this.diagnosticMapping[`${iaLevel}/${culturaLevel}`] || 'Diagnóstico não disponível';
+        
+        // Obter pontos fortes, fracos e recomendações
+        const iaStrengths = this.identifyStrengths(formData, 'ia', iaLevel);
+        const culturaStrengths = this.identifyStrengths(formData, 'cultura', culturaLevel);
+        const allStrengths = [...iaStrengths, ...culturaStrengths];
+        
+        const iaWeaknesses = this.identifyWeaknesses(formData, 'ia', iaLevel);
+        const culturaWeaknesses = this.identifyWeaknesses(formData, 'cultura', culturaLevel);
+        const allWeaknesses = [...iaWeaknesses, ...culturaWeaknesses];
+        
+        const iaRecommendations = this.generateRecommendations(formData, 'ia', iaLevel);
+        const culturaRecommendations = this.generateRecommendations(formData, 'cultura', culturaLevel);
+        const allRecommendations = [...iaRecommendations, ...culturaRecommendations];
+        
+        // Debug para verificar as variações geradas
+        console.log('Significado do diagnóstico:', diagMeaning);
+        console.log('Pontos fortes:', allStrengths.join(', '));
+        console.log('Pontos fracos:', allWeaknesses.join(', '));
+        console.log('Recomendações:', allRecommendations.join(', '));
+        
+        // Retornar as variações
         return [
             {
-                text: this.diagnosticMapping[diagnosticKey] || 'Diagnóstico não disponível',
-                score: iaScore,
-                category: 'ia'
+                text: diagMeaning,
+                score: iaScore + culturaScore,
+                category: 'significado'
             },
             {
-                text: this.companyMeaning[diagnosticKey]?.[0] || 'Análise não disponível',
+                text: allStrengths.join(', '),
+                score: iaScore,
+                category: 'pontos_fortes'
+            },
+            {
+                text: allWeaknesses.join(', '),
                 score: culturaScore,
-                category: 'cultura'
+                category: 'pontos_fracos'
+            },
+            {
+                text: allRecommendations.join(', '),
+                score: Math.floor((iaScore + culturaScore) / 2),
+                category: 'recomendacoes'
             }
         ];
     }

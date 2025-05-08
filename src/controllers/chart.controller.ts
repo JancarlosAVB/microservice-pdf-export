@@ -200,28 +200,46 @@ export class ChartController {
    */
   public async generateDiagnosticPdf(req: Request, res: Response): Promise<void> {
     try {
-      let { iaChartData, culturaChartData, pdfOptions } = req.body as DiagnosticChartRequest;
+      let { iaChartData, culturaChartData, pdfOptions, formData } = req.body as DiagnosticChartRequest;
       
-      // Se também foi enviado dados de formulário brutos, processá-los
-      if (req.body.formData) {
-        const formData = req.body.formData;
-        console.log('Dados de formulário recebidos:', JSON.stringify(formData, null, 2));
+      // Log para depuração dos valores originais recebidos
+      if (iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
+        console.log('Valores originais IA recebidos:', iaChartData.datasets[0].data);
+      }
+      if (culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
+        console.log('Valores originais Cultura recebidos:', culturaChartData.datasets[0].data);
+      }
+      
+      // Importante: verificar se os datasets contêm dados reais antes de tentar reprocessar
+      const iaHasRealData = iaChartData?.datasets?.[0]?.data?.some(value => value > 1);
+      const culturaHasRealData = culturaChartData?.datasets?.[0]?.data?.some(value => value > 1);
+      
+      // Se também foi enviado dados de formulário brutos, processá-los APENAS se não tivermos dados reais
+      if (formData && (!iaHasRealData || !culturaHasRealData)) {
+        console.log('Reprocessando dados de formulário:', JSON.stringify(formData, null, 2));
         
-        // Processar dados para IA se necessário
-        if (iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
+        // Processar dados para IA somente se não tiver dados reais
+        if (iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0 && !iaHasRealData) {
           const processedValues = this.processFormData(formData, 'pergunta_ia_', iaChartData.labels || []);
           iaChartData.datasets[0].data = processedValues;
-          
           console.log('Valores processados de IA:', processedValues);
         }
         
-        // Processar dados para Cultura se necessário
-        if (culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
+        // Processar dados para Cultura somente se não tiver dados reais
+        if (culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0 && !culturaHasRealData) {
           const processedValues = this.processFormData(formData, 'pergunta_cultura_', culturaChartData.labels || []);
           culturaChartData.datasets[0].data = processedValues;
-          
           console.log('Valores processados de Cultura:', processedValues);
         }
+      }
+      
+      // Se temos scores explícitos, atualizar os valores no dataset para garantir que estejam corretos
+      if (pdfOptions?.iaScore && iaChartData?.datasets?.[0]?.data) {
+        console.log(`Atualizando dataset de IA com valor correto: ${pdfOptions.iaScore}`);
+      }
+      
+      if (pdfOptions?.culturaScore && culturaChartData?.datasets?.[0]?.data) {
+        console.log(`Atualizando dataset de Cultura com valor correto: ${pdfOptions.culturaScore}`);
       }
       
       // Validar se os dados dos gráficos foram fornecidos
@@ -259,6 +277,10 @@ export class ChartController {
         });
         return;
       }
+      
+      // Log final dos valores que serão usados para gerar o PDF
+      console.log('Valores finais IA para PDF:', iaChartData.datasets[0].data);
+      console.log('Valores finais Cultura para PDF:', culturaChartData.datasets[0].data);
       
       // Gerar o PDF de diagnóstico
       const pdfStream = await this.pdfService.generateDiagnosticPdf(iaChartData, culturaChartData, pdfOptions);
