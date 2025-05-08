@@ -7,6 +7,25 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { DiagnosticService } from './diagnostic.service';
 
+// Classe personalizada para capturar os chunks do PDF
+class WritableBufferStream {
+  private chunks: Buffer[] = [];
+  private onFinish: (buffer: Buffer) => void;
+
+  constructor(onFinish: (buffer: Buffer) => void) {
+    this.onFinish = onFinish;
+  }
+
+  write(chunk: Buffer): void {
+    this.chunks.push(chunk);
+  }
+
+  end(): void {
+    const buffer = Buffer.concat(this.chunks);
+    this.onFinish(buffer);
+  }
+}
+
 export class PdfService {
   private chartService: ChartService;
   private assetsPath: string;
@@ -35,6 +54,105 @@ export class PdfService {
     'Visionária/Altamente Alinhada': 'Referência em maturidade de IA e cultura organizacional inovadora.'
   };
 
+  // Mapeamento de significado de empresa para combinações de IA e Cultura
+  private companyMeaning: Record<string, string[]> = {
+    'Tradicional/Alta Resistência': [
+      'Sua empresa adota um modelo tradicional, com uso limitado de IA e métodos consolidados que dificultam a inovação.',
+      'A cultura organizacional demonstra certa relutância a mudanças, o que pode retardar a introdução de novas tecnologias.',
+      'O próximo passo é iniciar capacitações e projetos piloto de baixo risco para, gradualmente, preparar a empresa para a transformação digital.'
+    ],
+    'Tradicional/Moderadamente Aberta': [
+      'Sua empresa mantém um perfil tradicional em termos de IA, com iniciativas pontuais e baixo investimento tecnológico.',
+      'Embora existam alguns desafios culturais, nota-se uma abertura que pode ser cultivada para favorecer a inovação.',
+      'O próximo passo é desenvolver um roadmap gradual, alinhando capacitação e parcerias para integrar a tecnologia aos objetivos de inovação.'
+    ],
+    'Tradicional/Favorável': [
+      'Sua empresa demonstra uma abordagem tradicional no uso de IA, mas conta com uma cultura que valoriza a inovação.',
+      'Apesar da cultura favorável, é importante desenvolver processos mais estruturados e ampliar os investimentos tecnológicos para expandir a utilização da IA.',
+      'O próximo passo é formalizar processos e elaborar um roadmap tecnológico que capitaliza a cultura inovadora já existente.'
+    ],
+    'Tradicional/Altamente Alinhada': [
+      'Sua empresa opera de maneira tradicional em IA, mesmo em meio a uma cultura altamente alinhada à inovação.',
+      'Mesmo com uma cultura muito positiva, a aplicação prática da tecnologia pode se beneficiar de processos mais consolidados.',
+      'O próximo passo é acelerar as iniciativas de IA com investimentos estratégicos e metas integradas, aproveitando a cultura positiva.'
+    ],
+    'Exploradora/Alta Resistência': [
+      'Sua empresa já iniciou a adoção de IA, demonstrando interesse em explorar novas tecnologias, mas enfrenta barreiras culturais significativas.',
+      'Algumas dificuldades na comunicação dos benefícios e uma certa resistência interna podem moderar o avanço dos projetos.',
+      'O próximo passo é implementar campanhas de sensibilização e programas de mentoria para reduzir a resistência e consolidar as iniciativas exploratórias.'
+    ],
+    'Exploradora/Moderadamente Aberta': [
+      'Sua empresa está dando os primeiros passos na adoção de IA, com projetos exploratórios que revelam interesse pela inovação.',
+      'A expansão dos projetos pode ser aprimorada com uma integração maior e o estabelecimento de indicadores que permitam mensurar os resultados.',
+      'O próximo passo é desenvolver um roadmap estratégico que alinhe os projetos de IA aos objetivos culturais, estabelecendo KPIs e promovendo fóruns interdepartamentais.'
+    ],
+    'Exploradora/Favorável': [
+      'Sua empresa já apresenta iniciativas de IA promissoras, apoiadas por uma cultura organizacional que incentiva a inovação.',
+      'Apesar dos resultados promissores, a formalização dos processos e uma integração mais ampla entre as áreas podem potencializar os resultados.',
+      'O próximo passo é estruturar os processos de expansão dos pilotos e investir em capacitação avançada para maximizar os resultados.'
+    ],
+    'Exploradora/Altamente Alinhada': [
+      'Sua empresa está explorando a IA com iniciativas iniciais que demonstram potencial, sustentadas por uma cultura altamente alinhada e com liderança engajada.',
+      'A consolidação de uma estratégia e a padronização dos processos podem ajudar a avançar da fase exploratória para uma implementação mais completa.',
+      'O próximo passo é desenvolver um roadmap robusto, intensificar os investimentos em tecnologia e adotar uma governança adaptativa para estruturar os projetos.'
+    ],
+    'Inovadora/Alta Resistência': [
+      'Sua empresa já utiliza a IA de forma estruturada, gerando resultados positivos, mas enfrenta forte resistência cultural.',
+      'Melhorar a comunicação dos benefícios e fortalecer a integração entre as áreas pode ser fundamental para ampliar os projetos.',
+      'O próximo passo é implementar ações de gestão de mudanças, reestruturar a organização e desenvolver campanhas internas que destaquem os ganhos da inovação.'
+    ],
+    'Inovadora/Moderadamente Aberta': [
+      'Sua empresa demonstra um uso sólido de IA, com resultados consistentes, mesmo que a abertura cultural seja moderada.',
+      'Uma maior integração dos colaboradores e das áreas operacionais pode contribuir para potencializar os projetos já consolidados.',
+      'O próximo passo é intensificar capacitações, formalizar a governança e promover a integração de stakeholders para fortalecer a transformação digital.'
+    ],
+    'Inovadora/Favorável': [
+      'Sua empresa utiliza a IA de forma estruturada e conta com uma cultura que apoia ativamente a inovação e a colaboração.',
+      'Mesmo com um bom equilíbrio entre tecnologia e cultura, aprimorar a escalabilidade e garantir a continuidade dos investimentos pode impulsionar os resultados.',
+      'O próximo passo é consolidar processos, fomentar a inovação contínua e implementar programas de reconhecimento para manter a competitividade.'
+    ],
+    'Inovadora/Altamente Alinhada': [
+      'Sua empresa já consolidou projetos de IA que geram impacto estratégico, sustentados por uma cultura robusta e integrada.',
+      'A sinergia entre as áreas já gera avanços notáveis; contudo, manter um ritmo constante de inovação pode ajudar a evitar eventuais estagnações.',
+      'O próximo passo é investir em P&D, estabelecer parcerias estratégicas e monitorar proativamente os resultados para continuar evoluindo.'
+    ],
+    'Visionária/Alta Resistência': [
+      'Sua empresa possui uma visão estratégica de IA e realiza investimentos significativos, mas enfrenta forte resistência cultural.',
+      'Embora a visão estratégica seja sólida, ajustar a implementação prática pode facilitar a adoção completa da inovação pelos colaboradores.',
+      'O próximo passo é promover uma mudança cultural intensiva, integrando equipes e, se necessário, recorrer a consultorias especializadas para alinhar a prática à estratégia.'
+    ],
+    'Visionária/Moderadamente Aberta': [
+      'Sua empresa tem uma estratégia de IA avançada e realiza investimentos robustos, mas a cultura ainda está se adaptando à visão tecnológica.',
+      'Os projetos-piloto já apresentam resultados positivos; aprimorar a comunicação e a disseminação das boas práticas pode ampliar ainda mais o impacto.',
+      'O próximo passo é refinar a comunicação interna, incentivar o engajamento dos colaboradores e revisar os processos decisórios para acelerar a transformação digital.'
+    ],
+    'Visionária/Favorável': [
+      'Sua empresa se destaca como referência na adoção estratégica de IA, com uma cultura altamente colaborativa e adaptável.',
+      'Embora a capacidade de ajuste seja excelente, explorar tecnologias emergentes e otimizar a integração entre as áreas pode fortalecer ainda mais sua posição.',
+      'O próximo passo é investir em parcerias estratégicas, otimizar processos e promover treinamentos focados em novas tendências para consolidar a liderança.'
+    ],
+    'Visionária/Altamente Alinhada': [
+      'Sua empresa atinge um nível de excelência, com plena integração entre tecnologia e cultura, posicionando-se como referência em inovação.',
+      'A elevada capacidade de adaptação é um grande diferencial; contudo, ajustes contínuos na complexidade dos processos podem garantir uma evolução consistente.',
+      'O próximo passo é fomentar a pesquisa interna, realizar benchmarking global e desenvolver uma estratégia de sustentabilidade que garanta a continuidade dos avanços.'
+    ]
+  };
+
+  /**
+   * Obtém a lista de significados para empresa baseado na combinação de níveis
+   * @param iaLevel Nível de maturidade em IA
+   * @param culturaLevel Nível de cultura
+   * @returns Array de frases com significados para a empresa
+   */
+  public getCompanyMeaning(iaLevel: string, culturaLevel: string): string[] {
+    const key = `${iaLevel}/${culturaLevel}`;
+    return this.companyMeaning[key] || [
+      'Não foi possível determinar um significado específico para esta combinação de níveis.',
+      'Por favor, revise os dados inseridos ou entre em contato com o suporte.',
+      'Recomendamos uma nova avaliação para obter insights mais precisos.'
+    ];
+  }
+
   constructor() {
     this.chartService = new ChartService();
     this.diagnosticService = new DiagnosticService();
@@ -43,290 +161,539 @@ export class PdfService {
   }
 
   /**
-   * Gera um PDF contendo o gráfico radar
-   * @param chartData Dados para o gráfico radar
-   * @param options Opções de configuração do PDF
-   * @returns Stream legível contendo o PDF gerado
+   * Gera uma página de título para o PDF
    */
-  public async generatePdf(chartData: RadarChartData, options: PdfOptions = {}): Promise<Readable> {
-    // Configurações padrão
-    const width = chartData.width || 600;
-    const height = chartData.height || 400;
-    const pageSize = options.pageSize || 'A4';
-    const pageOrientation = options.pageOrientation || 'portrait';
+  private generateTitlePage(doc: any, options: PdfOptions): void {
+    // Adicionar página e definir fundo
+    doc.addPage();
     
-    // Criar o canvas e gerar o gráfico
-    const canvas = createCanvas(width, height);
-    const chart = this.chartService.generateRadarChart(canvas, chartData);
+    // Cor de fundo azul escuro para toda a página
+    doc.rect(0, 0, doc.page.width, doc.page.height)
+       .fill('#1E2A4A');
     
-    // Garantir que o gráfico seja renderizado
-    await new Promise<void>(resolve => setTimeout(resolve, 100));
+    // Título centralizado em branco
+    doc.fontSize(28)
+       .font('Helvetica-Bold')
+       .fillColor('white')
+       .text(options.title || 'Diagnóstico de Maturidade em IA e Cultura Organizacional', {
+          align: 'center',
+          width: doc.page.width - 80,
+          height: doc.page.height,
+          y: doc.page.height / 3
+       });
     
-    // Criar o documento PDF
-    const doc = new PDFDocument({ 
-      size: pageSize, 
-      layout: pageOrientation,
-      info: {
-        Title: options.title || 'Gráfico Radar',
-        Author: options.author || 'Microserviço PDF Export',
-        Subject: options.subject || 'Gráfico Radar em PDF'
-      }
-    });
+    // Subtítulo em cinza claro
+    doc.fontSize(14)
+       .font('Helvetica')
+       .fillColor('#cccccc')
+       .text('Análise de maturidade e recomendações estratégicas', {
+          align: 'center',
+          width: doc.page.width - 100
+       })
+       .moveDown(4);
     
-    // Adicionar título ao PDF, se fornecido
-    if (options.title) {
-      doc.fontSize(18)
-        .font('Helvetica-Bold')
-        .text(options.title, { align: 'center' })
-        .moveDown(0.5);
+    // Informações da empresa (se fornecidas)
+    if (options.company) {
+      doc.fontSize(16)
+         .font('Helvetica-Bold')
+         .fillColor('white')
+         .text('Empresa:', {
+            align: 'center',
+            width: doc.page.width - 100,
+            continued: true
+         })
+         .font('Helvetica')
+         .text(' ' + options.company);
     }
     
-    // Centralizar o gráfico na página
-    const pageWidth = pageOrientation === 'portrait' ? 
-      (pageSize === 'A4' ? 595.28 : 612) : 
-      (pageSize === 'A4' ? 841.89 : 792);
-    
-    const xPosition = (pageWidth - width) / 2;
-    
-    // Adicionar imagem do gráfico ao PDF
-    doc.image(canvas.toBuffer('image/png'), xPosition, doc.y, {
-      width,
-      height
-    });
-    
-    // Finalizar o documento
-    doc.end();
-    
-    // Implementação correta do stream Readable
-    return new Promise((resolve) => {
-      const chunks: Buffer[] = [];
-      
-      doc.on('data', (chunk: Buffer) => {
-        chunks.push(chunk);
-      });
-      
-      doc.on('end', () => {
-        const buffer = Buffer.concat(chunks);
-        const stream = new Readable({
-          read() {
-            this.push(buffer);
-            this.push(null); // Sinaliza o fim do stream
-          }
-        });
-        
-        resolve(stream);
-      });
-    });
+    // Rodapé com data
+    doc.fontSize(10)
+       .font('Helvetica')
+       .fillColor('#cccccc')
+       .text('Documento gerado em ' + new Date().toLocaleDateString('pt-BR'), {
+          align: 'center',
+          width: doc.page.width,
+          y: doc.page.height - 50
+       });
   }
 
   /**
-   * Gera um PDF completo de diagnóstico contendo dois gráficos radar e análises
-   * @param iaChartData Dados para o gráfico radar de IA
-   * @param culturaChartData Dados para o gráfico radar de Cultura
-   * @param options Opções de configuração do PDF e diagnóstico
-   * @returns Stream legível contendo o PDF gerado
+   * Gera uma página contendo um gráfico radar
+   */
+  private generateChartPage(doc: any, chartData: RadarChartData, title: string, options: PdfOptions): void {
+    // Adicionar nova página
+    doc.addPage();
+    
+    // Cabeçalho azul
+    doc.rect(0, 0, doc.page.width, 30)
+       .fill('#1E2A4A');
+    
+    // Texto do cabeçalho
+    doc.fillColor('white')
+       .fontSize(12)
+       .font('Helvetica-Bold')
+       .text(title, 20, 10);
+    
+    // Espaço para o título
+    doc.moveDown(3);
+    
+    // Título do gráfico
+    doc.fillColor('#333333')
+       .fontSize(18)
+       .font('Helvetica-Bold')
+       .text(title, {
+          align: 'center',
+          width: doc.page.width - 40
+       })
+       .moveDown(1);
+    
+    // Preparar canvas para o gráfico
+    const chartWidth = 400;
+    const chartHeight = 400;
+    const canvas = createCanvas(chartWidth, chartHeight);
+    
+    // Desenhar gráfico no canvas
+    this.chartService.generateRadarChart(canvas, {
+      ...chartData,
+      width: chartWidth,
+      height: chartHeight
+    });
+    
+    // Centralizar o gráfico na página
+    const x = (doc.page.width - chartWidth) / 2;
+    
+    // Adicionar o gráfico ao PDF
+    doc.image(canvas.toBuffer(), x, doc.y, {
+      width: chartWidth,
+      height: chartHeight
+    });
+    
+    // Adicionar legenda
+    doc.moveDown(0.5);
+    doc.fontSize(10)
+       .font('Helvetica')
+       .fillColor('#666666')
+       .text('Quanto maior o valor em cada dimensão, maior a maturidade/alinhamento.', {
+          align: 'center',
+          width: doc.page.width - 60
+       });
+  }
+
+  /**
+   * Gera um PDF de diagnóstico completo com dois gráficos radar e análises
+   * @param iaChartData Dados do gráfico radar de IA
+   * @param culturaChartData Dados do gráfico radar de cultura
+   * @param options Opções do PDF
+   * @param formData Dados do formulário (opcional)
+   * @returns Stream do PDF gerado
    */
   public async generateDiagnosticPdf(
     iaChartData: RadarChartData, 
     culturaChartData: RadarChartData, 
-    options: PdfOptions = {}
+    options: PdfOptions = {},
+    formData?: Record<string, any>
   ): Promise<Readable> {
-    // Configurações padrão
-    const pageSize = options.pageSize || 'A4';
-    const pageOrientation = options.pageOrientation || 'portrait';
-    // Configurações do gráfico ajustadas para melhor qualidade e visualização
-    const chartWidth = 250;  // Reduzido para 50% do tamanho anterior
-    const chartHeight = 250; // Altura ajustada para manter proporções
-    
-    // Criar os canvas e gerar os gráficos
-    const iaCanvas = createCanvas(chartWidth, chartHeight);
-    const culturaCanvas = createCanvas(chartWidth, chartHeight);
-    
-    // Garantir que os dados não sejam zerados
-    const iaDatasets = iaChartData.datasets.map(dataset => ({
-      ...dataset,
-      data: dataset.data.map(value => value || 1) // Substituir zeros por valores mínimos
-    }));
-    
-    const culturaDatasets = culturaChartData.datasets.map(dataset => ({
-      ...dataset,
-      data: dataset.data.map(value => value || 1) // Substituir zeros por valores mínimos
-    }));
-
-    // Aplicar títulos para cada gráfico - removendo títulos dos gráficos para ficar igual à imagem
-    this.chartService.generateRadarChart(iaCanvas, {
-      ...iaChartData,
-      title: '',  // Sem título no gráfico, será adicionado como texto no PDF
-      datasets: iaDatasets,
-      width: chartWidth,
-      height: chartHeight
-    });
-    
-    this.chartService.generateRadarChart(culturaCanvas, {
-      ...culturaChartData,
-      title: '',  // Sem título no gráfico, será adicionado como texto no PDF
-      datasets: culturaDatasets,
-      width: chartWidth,
-      height: chartHeight
-    });
-    
-    // Garantir que os gráficos sejam renderizados
-    await new Promise<void>(resolve => setTimeout(resolve, 200));
-    
-    // Criar o documento PDF com margens menores
-    const doc = new PDFDocument({ 
-      size: pageSize, 
-      layout: pageOrientation,
-      margins: { top: 60, bottom: 60, left: 60, right: 60 },  // Margens ajustadas em todos os lados
-      info: {
-        Title: options.title || 'Diagnóstico de IA e Cultura',
-        Author: options.author || 'Singulari - Diagnóstico de IA',
-        Subject: options.subject || 'Relatório de Diagnóstico',
-        Keywords: options.keywords || 'IA, Cultura, Diagnóstico',
-        CreationDate: new Date(),
+    // Configurar o stream de resposta
+    const chunks: Buffer[] = [];
+    const stream = new Readable({
+      read() {
+        // Implementação vazia pois preenchemos o stream após o PDF ser gerado
       }
     });
     
-    // Cabeçalho azul escuro para a primeira página
-    doc.rect(0, 0, doc.page.width, 50)
-       .fill('#1E2A4A');  // Azul escuro no topo da página
+    try {
+      console.log('Iniciando geração de PDF de diagnóstico');
+      
+      // Gerar PDF com PDFKit
+      const doc = new PDFDocument({
+        size: options.pageSize || 'A4',
+        layout: options.pageOrientation || 'portrait',
+        margins: {
+          top: 30,
+          bottom: 30,
+          left: 40,
+          right: 40
+        },
+        bufferPages: true,
+        info: {
+          Title: options.title || 'Diagnóstico de IA e Cultura',
+          Author: options.author || 'Sistema de Diagnóstico',
+          Subject: options.subject || 'Análise de Maturidade em IA e Cultura Organizacional',
+          Keywords: options.keywords || 'IA, Inteligência Artificial, Cultura, Organização'
+        }
+      });
+      
+      // Configurar o pipe para capturar todo o conteúdo
+      const bufferStream = new WritableBufferStream((pdfBuffer) => {
+        stream.push(pdfBuffer);
+        stream.push(null); // Finalizar o stream
+      });
+      
+      doc.pipe(bufferStream as any);
+      
+      // Verificar se temos dados do WordPress com formData
+      const usingWordPressData = formData && 
+                                (formData._use_direct_values === true || 
+                                 formData._ia_level || 
+                                 formData._combined_analysis);
+      
+      console.log('Usando dados diretos do WordPress?', usingWordPressData ? 'Sim' : 'Não');
+      
+      // Adicionar página de capa com fundo colorido
+      this.generateTitlePage(doc, options);
+      
+      // Adicionar página de gráfico de IA
+      this.generateChartPage(doc, iaChartData, 'Maturidade em IA', options);
+      
+      // Adicionar página de gráfico de Cultura
+      this.generateChartPage(doc, culturaChartData, 'Alinhamento Cultural', options);
+      
+      // Adicionar seção de insights usando o método dedicado que agora usa o DiagnosticService
+      if (usingWordPressData) {
+        // Usar dados das análises enviadas pelo WordPress
+        console.log('Gerando insights a partir dos dados enviados pelo WordPress');
+        this.generateInsightsPageFromWordPress(doc, iaChartData, culturaChartData, options, formData);
+      } else {
+        // Usar o DiagnosticService para gerar as análises
+        console.log('Gerando insights usando DiagnosticService do microserviço');
+        this.generateInsightsPage(doc, iaChartData, culturaChartData, options);
+      }
+      
+      // Finalizar o documento
+      doc.end();
+      
+      return stream;
+    } catch (error) {
+      console.error('Erro ao gerar PDF de diagnóstico:', error);
+      stream.emit('error', error);
+      return stream;
+    }
+  }
+  
+  /**
+   * Gera a página de insights baseada nos dados recebidos diretamente do WordPress
+   */
+  private generateInsightsPageFromWordPress(
+    doc: any, 
+    iaChartData: RadarChartData, 
+    culturaChartData: RadarChartData, 
+    options: PdfOptions,
+    formData: Record<string, any>
+  ): void {
+    // Calcular pontuações
+    const iaScore = this.calculateScore(iaChartData);
+    const culturaScore = this.calculateScore(culturaChartData);
     
-    // Texto do cabeçalho
+    // Garantir que as pontuações foram passadas ou calculadas
+    const finalIaScore = options?.iaScore || iaScore;
+    const finalCulturaScore = options?.culturaScore || culturaScore;
+    
+    // Obter níveis do formData (enviados pelo WordPress)
+    const iaLevel = formData._ia_level || options?.iaLevel || this.diagnosticService.getIALevelText(finalIaScore);
+    const culturaLevel = formData._cultura_level || options?.culturaLevel || this.diagnosticService.getCulturaLevelText(finalCulturaScore);
+    
+    // Texto do diagnóstico combinado
+    const diagnosticText = formData._combined_analysis || 
+                          options?.diagnosticText || 
+                          this.diagnosticService.analyze(finalIaScore, finalCulturaScore);
+    
+    // Obter recomendações do WordPress, se disponíveis
+    const recommendations = formData._recommendations || this.diagnosticService.getRecommendationText(finalIaScore, finalCulturaScore);
+    
+    // Obter significado para a empresa, se disponível
+    const companyMeaning = formData._company_meaning || this.diagnosticService.getCompanyMeaning(finalIaScore, finalCulturaScore);
+
+    // Adicionar nova página para insights
+    doc.addPage();
+    
+    // Título dos insights
+    doc.fontSize(18)
+       .font('Helvetica-Bold')
+       .fillColor('#1E2A4A')
+       .text('Diagnóstico e Insights', { align: 'center' })
+       .moveDown(0.5);
+    
+    // Mostrar níveis de maturidade
+    doc.fontSize(14)
+       .text('Níveis de Maturidade', { align: 'left' })
+       .moveDown(0.5);
+    
+    // Desenhar tabela de níveis
+    const startY = doc.y;
+    
+    // Desenhar célula de cabeçalho para IA
+    doc.rect(doc.x, startY, 150, 25)
+       .fill('#1E2A4A');
+    
     doc.fillColor('white')
+       .text('Maturidade em IA', doc.x + 5, startY + 7);
+    
+    // Desenhar célula com o nível de IA
+    doc.rect(doc.x + 150, startY, 150, 25)
+       .fill('#E6EFF7');
+    
+    const iaLevelColor = finalIaScore >= 34 ? '#006400' : // Verde para nível alto
+                      finalIaScore >= 27 ? '#4682B4' : // Azul para nível bom
+                      finalIaScore >= 18 ? '#FF8C00' : // Laranja para nível médio
+                      '#DC143C'; // Vermelho para nível baixo
+    
+    doc.fillColor(iaLevelColor)
+       .font('Helvetica-Bold')
+       .text(`${iaLevel} (${finalIaScore} pts)`, doc.x + 155, startY + 7);
+    
+    // Desenhar célula de cabeçalho para Cultura
+    doc.rect(doc.x, startY + 25, 150, 25)
+       .fill('#1E2A4A');
+    
+    doc.fillColor('white')
+       .text('Alinhamento Cultural', doc.x + 5, startY + 32);
+    
+    // Desenhar célula com o nível de cultura
+    doc.rect(doc.x + 150, startY + 25, 150, 25)
+       .fill('#E6EFF7');
+    
+    const culturaLevelColor = finalCulturaScore >= 34 ? '#006400' : // Verde para nível alto
+                           finalCulturaScore >= 27 ? '#4682B4' : // Azul para nível bom
+                           finalCulturaScore >= 18 ? '#FF8C00' : // Laranja para nível médio
+                           '#DC143C'; // Vermelho para nível baixo
+    
+    doc.fillColor(culturaLevelColor)
+       .text(`${culturaLevel} (${finalCulturaScore} pts)`, doc.x + 155, startY + 32);
+    
+    doc.moveDown(2);
+    
+    // Mostrar diagnóstico combinado
+    doc.fillColor('#1E2A4A')
        .fontSize(14)
        .font('Helvetica-Bold')
-       .text('Diagnóstico | Relatório Completo', 50, 18, { align: 'left' });
+       .text('Diagnóstico Combinado', { align: 'left' })
+       .moveDown(0.5);
     
-    // Configurar cabeçalho para as próximas páginas
-    doc.on('pageAdded', () => {
-      doc.rect(0, 0, doc.page.width, 50)
-         .fill('#1E2A4A');
-      doc.fillColor('white')
+    doc.fontSize(12)
+       .font('Helvetica')
+       .fillColor('#333333')
+       .text(diagnosticText, { align: 'justify' })
+       .moveDown(1.5);
+       
+    // Verificar se temos companyMeaning para adicionar
+    if (companyMeaning && Array.isArray(companyMeaning) && companyMeaning.length > 0) {
+      doc.fillColor('#1E2A4A')
          .fontSize(14)
          .font('Helvetica-Bold')
-         .text('Diagnóstico | Relatório Completo', 50, 18, { align: 'left' });
-    });
-       
-    // Título principal 'Seu resultado' centralizado - com espaço adequado do cabeçalho
-    doc.fontSize(28)
+         .text('O que isso significa para sua empresa', { align: 'left' })
+         .moveDown(0.5);
+      
+      companyMeaning.forEach((paragraph: string) => {
+        doc.fontSize(12)
+           .font('Helvetica')
+           .fillColor('#333333')
+           .text(paragraph, { align: 'justify' })
+           .moveDown(1);
+      });
+    }
+    
+    // Mostrar recomendações - usar dados do WordPress
+    doc.fillColor('#1E2A4A')
+       .fontSize(14)
        .font('Helvetica-Bold')
-       .fillColor('#334A7C')  // Azul mais claro
-       .text('Seu resultado', 40, 100, { width: doc.page.width - 80, align: 'center' })
-       .moveDown(1);
-       
-    // Calcular pontuações e níveis
-    // Somar os valores dos datasets para obter a pontuação total
-    const iaValues = iaChartData.datasets[0].data;
-    const culturaValues = culturaChartData.datasets[0].data;
-    
-    // Calcular as pontuações (soma dos valores)
-    const iaScore = iaValues.reduce((sum, val) => sum + (val || 0), 0);
-    const culturaScore = culturaValues.reduce((sum, val) => sum + (val || 0), 0);
-    
-    // Determinar os níveis com base nas pontuações
-    const iaLevel = this.calculateMaturityLevel(iaScore);
-    const culturaLevel = this.calculateCultureLevel(culturaScore);
-    
-    // Textos descritivos para cada nível
-    const iaDescription = this.getShortDescription(iaLevel, 'ia');
-    const culturaDescription = this.getShortDescription(culturaLevel, 'cultura');
-    
-    // Usar layout de gráficos um abaixo do outro
-    const fullWidth = doc.page.width - 80; // 40px de margem de cada lado
-    
-    // Seção de Inteligência Artificial
-    doc.fontSize(14)
-       .fillColor('#333333')
-       .font('Helvetica-Bold')
-       .text('NÍVEL DE MATURIDADE EM INTELIGÊNCIA ARTIFICIAL', 40, doc.y + 10, { width: fullWidth, align: 'center' });
-    
-    // Nome do nível IA
-    doc.fontSize(18)
-       .fillColor('#000000')
-       .font('Helvetica-Bold')
-       .text(iaLevel, 40, doc.y + 10, { width: fullWidth, align: 'center' });
-    
-    // Descrição do nível IA
-    doc.fontSize(10)
-       .fillColor('#666666')
-       .font('Helvetica')
-       .text(iaDescription, 40, doc.y + 5, { width: fullWidth, align: 'center' })
+       .text('Pontos Fortes', { align: 'left' })
        .moveDown(0.5);
     
-    // Adicionar gráfico IA centralizado com alta qualidade
-    const iaChartWidth = 225; // Reduzido para 50% do tamanho anterior
-    const xCenterIA = (doc.page.width - iaChartWidth) / 2;
-    doc.image(iaCanvas.toBuffer(), xCenterIA, doc.y, { width: iaChartWidth, align: 'center' });
+    // Listar pontos fortes
+    const pontosFortes = recommendations.pontos_fortes || [];
+    pontosFortes.forEach((ponto: string) => {
+      doc.fontSize(12)
+         .font('Helvetica')
+         .fillColor('#333333')
+         .text(`• ${ponto}`, { align: 'left', indent: 10 })
+         .moveDown(0.5);
+    });
     
-    // Avançar o cursor para depois do gráfico de IA
-    doc.y += chartHeight * 0.85 + 40;
+    doc.moveDown(0.5);
+    
+    // Áreas de melhoria
+    doc.fillColor('#1E2A4A')
+       .fontSize(14)
+       .font('Helvetica-Bold')
+       .text('Áreas de Melhoria', { align: 'left' })
+       .moveDown(0.5);
+    
+    // Listar áreas de melhoria
+    const areasMelhoria = recommendations.areas_melhoria || [];
+    areasMelhoria.forEach((area: string) => {
+      doc.fontSize(12)
+         .font('Helvetica')
+         .fillColor('#333333')
+         .text(`• ${area}`, { align: 'left', indent: 10 })
+         .moveDown(0.5);
+    });
+    
+    doc.moveDown(0.5);
+    
+    // Recomendações específicas
+    doc.fillColor('#1E2A4A')
+       .fontSize(14)
+       .font('Helvetica-Bold')
+       .text('Recomendações', { align: 'left' })
+       .moveDown(0.5);
+    
+    // Listar recomendações
+    const recomendacoes = recommendations.recomendacoes || [];
+    recomendacoes.forEach((rec: string) => {
+      doc.fontSize(12)
+         .font('Helvetica')
+         .fillColor('#333333')
+         .text(`• ${rec}`, { align: 'left', indent: 10 })
+         .moveDown(0.5);
+    });
+    
+    if (!pontosFortes.length && !areasMelhoria.length && !recomendacoes.length) {
+      doc.fontSize(12)
+         .font('Helvetica')
+         .fillColor('#333333')
+         .text('Dados insuficientes para gerar recomendações específicas.', { align: 'left' })
+         .moveDown(0.5);
+    }
+    
+    // Adicionar seção para visualização das respostas individuais
+    this.addResponseDetailsPage(doc, formData);
+  }
+  
+  /**
+   * Adiciona uma página com detalhes das respostas do formulário
+   */
+  private addResponseDetailsPage(doc: any, formData: Record<string, any>): void {
+    // Pular se não temos dados de respostas específicas
+    if (!formData || (!formData._ia_question_1_text && !formData.pergunta_1)) {
+      return;
+    }
+    
+    // Adicionar nova página
+    doc.addPage();
+    
+    // Título
+    doc.fontSize(18)
+       .font('Helvetica-Bold')
+       .fillColor('#1E2A4A')
+       .text('Detalhes da Avaliação', { align: 'center' })
+       .moveDown(1);
+    
+    // Seção de IA
+    doc.fontSize(16)
+       .font('Helvetica-Bold')
+       .fillColor('#1E2A4A')
+       .text('Maturidade em IA', { align: 'left' })
+       .moveDown(0.5);
+    
+    // Tabela para cada pergunta
+    const questoes_ia = [
+      'Uso de IA',
+      'Abrangência',
+      'Desafios',
+      'Benefícios',
+      'Avaliação de tecnologias',
+      'Escalabilidade',
+      'Integração com processos',
+      'Capacitação',
+      'Investimento',
+      'Visão estratégica'
+    ];
+    
+    for (let i = 1; i <= 10; i++) {
+      const pergunta = questoes_ia[i-1];
+      const resposta_texto = formData[`_ia_question_${i}_text`] || formData[`pergunta_${i}_texto`] || formData[`pergunta_${i}`] || 'Não informado';
+      const valor = formData[`_ia_values`] ? formData[`_ia_values`][i-1] : 
+                    formData[`pergunta_${i}`] && !isNaN(Number(formData[`pergunta_${i}`])) ? 
+                    Number(formData[`pergunta_${i}`]) : 'N/A';
+      
+      // Desenhar cabeçalho da pergunta
+      doc.rect(doc.x, doc.y, 400, 20)
+         .fill('#1E2A4A');
+      
+      doc.fillColor('white')
+         .fontSize(12)
+         .font('Helvetica-Bold')
+         .text(`${i}. ${pergunta}`, doc.x + 5, doc.y - 15);
+      
+      doc.moveDown(0.3);
+      
+      // Desenhar resposta
+      doc.rect(doc.x, doc.y, 400, 30)
+         .fill('#E6EFF7');
+      
+      doc.fillColor('#333333')
+         .fontSize(10)
+         .font('Helvetica')
+         .text(`Resposta: ${resposta_texto} (Valor: ${valor})`, doc.x + 5, doc.y - 25);
+      
+      doc.moveDown(0.8);
+    }
+    
+    // Verificar se tem espaço suficiente para a seção de cultura
+    if (doc.y > 650) {
+      doc.addPage();
+    } else {
+      doc.moveDown(1);
+    }
     
     // Seção de Cultura
-    doc.fontSize(14)
-       .fillColor('#333333')
+    doc.fontSize(16)
        .font('Helvetica-Bold')
-       .text('GRAU DE ALINHAMENTO CULTURAL COM INOVAÇÃO', 40, doc.y, { width: fullWidth, align: 'center' });
-    
-    // Nome do nível Cultura
-    doc.fontSize(18)
-       .fillColor('#000000')
-       .font('Helvetica-Bold')
-       .text(culturaLevel, 40, doc.y + 10, { width: fullWidth, align: 'center' });
-    
-    // Descrição do nível Cultura
-    doc.fontSize(10)
-       .fillColor('#666666')
-       .font('Helvetica')
-       .text(culturaDescription, 40, doc.y + 5, { width: fullWidth, align: 'center' })
+       .fillColor('#1E2A4A')
+       .text('Alinhamento Cultural', { align: 'left' })
        .moveDown(0.5);
     
-    // Adicionar gráfico Cultura centralizado com alta qualidade
-    const culturaChartWidth = 225; // Reduzido para 50% do tamanho anterior
-    const xCenterCultura = (doc.page.width - culturaChartWidth) / 2;
-    doc.image(culturaCanvas.toBuffer(), xCenterCultura, doc.y, { width: culturaChartWidth, align: 'center' });
+    // Tabela para cada pergunta de cultura
+    const questoes_cultura = [
+      'Mudanças',
+      'Engajamento',
+      'Colaboração',
+      'Experimentação',
+      'Liderança',
+      'Comunicação',
+      'Capacitação',
+      'Reconhecimento',
+      'Cultura de feedback',
+      'Alinhamento estratégico'
+    ];
     
-    // Avançar o cursor para depois do gráfico de Cultura
-    doc.y += chartHeight * 0.85 + 40;
-    
-    // Adicionar nova página para a seção 'O que isso significa para sua empresa?'
-    doc.addPage();
-
-    // Garantir espaço adequado após o cabeçalho
-    doc.moveDown(3);
-    
-    // Adicionar seção de insights usando o método dedicado que agora usa o DiagnosticService
-    this.generateInsightsPage(doc, iaChartData, culturaChartData, options);
-
-    // Cálculo para dimensionamento do PDF
-    const pageWidth = pageOrientation === 'portrait' ? 
-      (pageSize === 'A4' ? 595.28 : 612) : 
-      (pageSize === 'A4' ? 841.89 : 792);
-    
-    const margin = 60; // Margem ajustada para 60
-    
-    // Finalizar o documento
-    doc.end();
-    
-    // Implementação do stream Readable
-    return new Promise((resolve) => {
-      const chunks: Buffer[] = [];
+    for (let i = 1; i <= 10; i++) {
+      const pergunta = questoes_cultura[i-1];
+      const pergunta_num = i + 10; // pergunta_11 a pergunta_20
+      const resposta_texto = formData[`_cultura_question_${i}_text`] || 
+                             formData[`pergunta_${pergunta_num}_texto`] || 
+                             formData[`pergunta_${pergunta_num}`] || 'Não informado';
+      const valor = formData[`_cultura_values`] ? formData[`_cultura_values`][i-1] : 
+                    formData[`pergunta_${pergunta_num}`] && !isNaN(Number(formData[`pergunta_${pergunta_num}`])) ? 
+                    Number(formData[`pergunta_${pergunta_num}`]) : 'N/A';
       
-      doc.on('data', (chunk: Buffer) => {
-        chunks.push(chunk);
-      });
+      // Adicionar nova página se necessário
+      if (doc.y > 780) {
+        doc.addPage();
+      }
       
-      doc.on('end', () => {
-        const buffer = Buffer.concat(chunks);
-        const stream = new Readable({
-          read() {
-            this.push(buffer);
-            this.push(null); // Sinaliza o fim do stream
-          }
-        });
-        
-        resolve(stream);
-      });
-    });
+      // Desenhar cabeçalho da pergunta
+      doc.rect(doc.x, doc.y, 400, 20)
+         .fill('#1E2A4A');
+      
+      doc.fillColor('white')
+         .fontSize(12)
+         .font('Helvetica-Bold')
+         .text(`${i}. ${pergunta}`, doc.x + 5, doc.y - 15);
+      
+      doc.moveDown(0.3);
+      
+      // Desenhar resposta
+      doc.rect(doc.x, doc.y, 400, 30)
+         .fill('#E6EFF7');
+      
+      doc.fillColor('#333333')
+         .fontSize(10)
+         .font('Helvetica')
+         .text(`Resposta: ${resposta_texto} (Valor: ${valor})`, doc.x + 5, doc.y - 25);
+      
+      doc.moveDown(0.8);
+    }
   }
 
   /**
@@ -392,7 +759,7 @@ export class PdfService {
    * @param level Nível de maturidade
    * @returns Texto de diagnóstico
    */
-  private getIADiagnosticText(score: number, level: string): string {
+  public getIADiagnosticText(score: number, level: string): string {
     // Textos base para cada nível de maturidade baseado no sistema do WordPress
     const diagnosticTexts: Record<string, string> = {
       'Tradicional': 'Sua organização está em um estágio inicial de adoção de IA, com uso limitado de tecnologias avançadas. Os processos são mais tradicionais e as iniciativas de IA são pontuais ou inexistentes. Há oportunidade para explorar os benefícios que a IA pode trazer para o seu negócio.',
@@ -424,7 +791,7 @@ export class PdfService {
    * @param level Nível de alinhamento cultural
    * @returns Texto de diagnóstico
    */
-  private getCultureDiagnosticText(score: number, level: string): string {
+  public getCultureDiagnosticText(score: number, level: string): string {
     // Textos base para cada nível de cultura baseado no sistema do WordPress
     const diagnosticTexts: Record<string, string> = {
       'Alta Resistência': 'A cultura organizacional atual apresenta resistência significativa à adoção de IA e novas tecnologias. Há receio quanto ao impacto da tecnologia nas funções existentes e pouca abertura para mudanças nos processos de trabalho. A liderança ainda não demonstra apoio claro às iniciativas de inovação.',
@@ -482,7 +849,7 @@ export class PdfService {
    * @param culturaLevel Nível de cultura
    * @returns Objeto com recomendações
    */
-  private getRecommendationsForCombination(iaLevel: string, culturaLevel: string): any {
+  public getRecommendationsForCombination(iaLevel: string, culturaLevel: string): any {
     // Estrutura padrão
     const recommendations = {
       pontosFortes: [] as string[],
@@ -748,5 +1115,90 @@ export class PdfService {
     
     const data = chartData.datasets[0]?.data || [];
     return data.reduce((sum, val) => sum + (val || 0), 0);
+  }
+
+  /**
+   * Gera um PDF com gráfico radar
+   * @param chartData Dados para o gráfico radar
+   * @param options Opções de configuração do PDF
+   * @returns Stream legível contendo o PDF gerado
+   */
+  public async generateChartPdf(chartData: RadarChartData, options: PdfOptions = {}): Promise<Readable> {
+    // Configurar o stream de resposta
+    const chunks: Buffer[] = [];
+    const stream = new Readable({
+      read() {
+        // Implementação vazia pois preenchemos o stream após o PDF ser gerado
+      }
+    });
+    
+    try {
+      console.log('Iniciando geração de PDF com gráfico radar');
+      
+      // Gerar PDF com PDFKit
+      const doc = new PDFDocument({
+        size: options.pageSize || 'A4',
+        layout: options.pageOrientation || 'portrait',
+        margins: {
+          top: 30,
+          bottom: 30,
+          left: 40,
+          right: 40
+        },
+        bufferPages: true,
+        info: {
+          Title: options.title || 'Gráfico Radar',
+          Author: options.author || 'Sistema de Gráficos',
+          Subject: options.subject || 'Gráfico Radar em PDF',
+          Keywords: options.keywords || 'gráfico, radar, análise'
+        }
+      });
+      
+      // Configurar o pipe para capturar todo o conteúdo
+      const bufferStream = new WritableBufferStream((pdfBuffer) => {
+        stream.push(pdfBuffer);
+        stream.push(null); // Finalizar o stream
+      });
+      
+      doc.pipe(bufferStream as any);
+      
+      // Adicionar título ao PDF, se fornecido
+      if (options.title) {
+        doc.fontSize(18)
+           .font('Helvetica-Bold')
+           .text(options.title, { align: 'center' })
+           .moveDown(0.5);
+      }
+      
+      // Preparar canvas para o gráfico
+      const chartWidth = chartData.width || 500;
+      const chartHeight = chartData.height || 400;
+      const canvas = createCanvas(chartWidth, chartHeight);
+      
+      // Desenhar gráfico no canvas
+      this.chartService.generateRadarChart(canvas, {
+        ...chartData,
+        width: chartWidth,
+        height: chartHeight
+      });
+      
+      // Centralizar o gráfico na página
+      const x = (doc.page.width - chartWidth) / 2;
+      
+      // Adicionar o gráfico ao PDF
+      doc.image(canvas.toBuffer(), x, doc.y, {
+        width: chartWidth,
+        height: chartHeight
+      });
+      
+      // Finalizar o documento
+      doc.end();
+      
+      return stream;
+    } catch (error) {
+      console.error('Erro ao gerar PDF com gráfico radar:', error);
+      stream.emit('error', error);
+      return stream;
+    }
   }
 }

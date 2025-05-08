@@ -55,4 +55,16 @@ export interface DiagnosticChartRequest {
     cultura: number[];
   };
   formData?: Record<string, any>;
+  analysis?: {
+    iaLevel?: string;
+    culturaLevel?: string;
+    combinedKey?: string;
+    diagnosticText?: string;
+    companyMeaning?: string[];
+    recommendations?: {
+      pontos_fortes?: string[];
+      areas_melhoria?: string[];
+      recomendacoes?: string[];
+    };
+  };
 }
