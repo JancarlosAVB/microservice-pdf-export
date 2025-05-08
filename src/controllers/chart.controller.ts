@@ -363,16 +363,44 @@ export class ChartController {
         return;
       }
       
-      // Gerar o PDF
-      const pdfStream = await this.pdfService.generateChartPdf(chartData, pdfOptions);
-      
-      // Configurar headers para download do PDF
-      const fileName = pdfOptions?.fileName || 'radar-chart.pdf';
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
-      
-      // Enviar o PDF como resposta
-      pdfStream.pipe(res);
+      try {
+        // Gerar o PDF
+        const pdfStream = await this.pdfService.generateChartPdf(chartData, pdfOptions);
+        
+        // Configurar headers para download do PDF
+        const fileName = pdfOptions?.fileName || 'radar-chart.pdf';
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+        
+        // Corrigindo o problema do pipe
+        pdfStream.on('data', (chunk) => {
+          res.write(chunk);
+        });
+        
+        pdfStream.on('end', () => {
+          res.end();
+        });
+        
+        pdfStream.on('error', (err) => {
+          console.error('Erro ao processar o stream de PDF:', err);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              message: 'Erro ao processar o stream de PDF',
+              error: err instanceof Error ? err.message : 'Erro desconhecido'
+            });
+          }
+        });
+      } catch (pdfError) {
+        console.error('Erro ao gerar PDF:', pdfError);
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false, 
+            message: 'Erro ao gerar o PDF',
+            error: pdfError instanceof Error ? pdfError.message : 'Erro desconhecido'
+          });
+        }
+      }
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       
@@ -541,16 +569,44 @@ export class ChartController {
         }
       }
       
-      // Gerar o PDF de diagnóstico
-      const pdfStream = await this.pdfService.generateDiagnosticPdf(iaChartData, culturaChartData, pdfOptions, formData);
-      
-      // Configurar headers para download do PDF
-      const fileName = pdfOptions.fileName || 'diagnostico-ia-cultura.pdf';
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
-      
-      // Enviar o PDF como resposta
-      pdfStream.pipe(res);
+      try {
+        // Gerar o PDF de diagnóstico
+        const pdfStream = await this.pdfService.generateDiagnosticPdf(iaChartData, culturaChartData, pdfOptions, formData);
+        
+        // Configurar headers para download do PDF
+        const fileName = pdfOptions.fileName || 'diagnostico-ia-cultura.pdf';
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
+        
+        // Corrigindo o problema do pipe
+        pdfStream.on('data', (chunk) => {
+          res.write(chunk);
+        });
+        
+        pdfStream.on('end', () => {
+          res.end();
+        });
+        
+        pdfStream.on('error', (err) => {
+          console.error('Erro ao processar o stream de PDF:', err);
+          if (!res.headersSent) {
+            res.status(500).json({
+              success: false,
+              message: 'Erro ao processar o stream de PDF',
+              error: err instanceof Error ? err.message : 'Erro desconhecido'
+            });
+          }
+        });
+      } catch (pdfError) {
+        console.error('Erro ao gerar PDF:', pdfError);
+        if (!res.headersSent) {
+          res.status(500).json({
+            success: false,
+            message: 'Erro ao gerar o PDF',
+            error: pdfError instanceof Error ? pdfError.message : 'Erro desconhecido'
+          });
+        }
+      }
     } catch (error) {
       console.error('Erro ao gerar PDF de diagnóstico:', error);
       
