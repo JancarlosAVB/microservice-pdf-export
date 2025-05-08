@@ -6,6 +6,7 @@ import { Readable } from 'stream';
 import * as fs from 'fs';
 import * as path from 'path';
 import { FormService } from './form.service';
+import { recommendationsData } from '../data/recommendations.data';
 
 export class PdfService {
   private chartService: ChartService;
@@ -327,80 +328,156 @@ export class PdfService {
     // Adicionar nova página para recomendações
     doc.addPage();
     
-    // Adicionar seção de recomendações
-    doc.fontSize(18)
+    // Adicionar cabeçalho "RECOMENDAÇÕES SINGULARI"
+    doc.fontSize(22)
       .font('Helvetica-Bold')
-      .fillColor('#333333')
-      .text('Recomendações e Próximos Passos', { align: 'left' })
-      .moveDown(1);
+      .fillColor('#3F51B5') // Cor azul escuro
+      .text('RECOMENDAÇÕES', 60, doc.y + 20)
+      .moveDown(0.2);
+    
+    doc.fontSize(30)
+      .font('Helvetica-Bold')
+      .fillColor('#3F51B5') // Cor azul escuro
+      .text('SINGULARI', 60, doc.y)
+      .moveDown(1.5);
+    
+    // Adicionar informações de nível - duas colunas
+    const halfWidth = (pageWidth - (margin * 2)) / 2;
+    
+    // Coluna esquerda - Nível de IA
+    doc.fontSize(10)
+      .font('Helvetica')
+      .fillColor('#666666')
+      .text('NÍVEL DE MATURIDADE EM', 60, doc.y, { width: halfWidth, align: 'left' })
+      .moveDown(0.1);
+    
+    doc.fontSize(10)
+      .font('Helvetica')
+      .fillColor('#666666')
+      .text('INTELIGÊNCIA ARTIFICIAL', 60, doc.y, { width: halfWidth, align: 'left' })
+      .moveDown(0.3);
+    
+    doc.fontSize(16)
+      .font('Helvetica-Bold')
+      .fillColor('#334A7C')
+      .text(iaLevel, 60, doc.y, { width: halfWidth, align: 'left' })
+      .moveDown(0.5);
+    
+    // Salvar a posição y para alinhar as seções abaixo
+    const startY = doc.y;
+    
+    // Coluna direita - Nível de Cultura
+    doc.fontSize(10)
+      .font('Helvetica')
+      .fillColor('#666666')
+      .text('GRAU DE ALINHAMENTO CULTURAL', pageWidth / 2, startY - 43, { width: halfWidth, align: 'left' })
+      .moveDown(0.1);
+    
+    doc.fontSize(10)
+      .font('Helvetica')
+      .fillColor('#666666')
+      .text('COM INOVAÇÃO', pageWidth / 2, startY - 30, { width: halfWidth, align: 'left' })
+      .moveDown(0.3);
+    
+    doc.fontSize(16)
+      .font('Helvetica-Bold')
+      .fillColor('#334A7C')
+      .text(culturaLevel, pageWidth / 2, startY - 15, { width: halfWidth, align: 'left' });
+    
+    // Reiniciar posição y após as duas colunas
+    doc.y = startY + 25;
     
     // Usar recomendações da opção ou da análise combinada
     const recommendations = options.recommendations || analysis.recommendations;
     
-    // Adicionar pontos fortes se disponíveis
+    // ========== SEÇÃO: PONTOS FORTES ==========
     if (recommendations?.pontosFortes && recommendations.pontosFortes.length > 0) {
+      // Criar o ícone de lâmpada (amarelo) - simulando com um círculo colorido
+      doc.circle(60, doc.y + 10, 15)
+         .fillColor('#CDDC39') // Verde claro/amarelo
+         .fill();
+      
+      // Adicionar texto "PONTOS FORTES" com ícone
       doc.fontSize(14)
         .font('Helvetica-Bold')
-        .fillColor('#4CAF50')
-        .text('Pontos Fortes', { align: 'left' })
+        .fillColor('#333333')
+        .text('PONTOS FORTES', 85, doc.y)
         .moveDown(0.5);
       
+      // Adicionar itens como bullet points
       doc.fontSize(12)
         .font('Helvetica')
         .fillColor('#333333');
       
-      recommendations.pontosFortes.forEach((ponto: string, index: number) => {
-        doc.text(`${index + 1}. ${ponto}`, {
-          align: 'left',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(0.5);
+      recommendations.pontosFortes.forEach((ponto: string) => {
+        doc.text('•', 85, doc.y, { continued: true })
+           .text(' ' + ponto, { 
+             align: 'left',
+             width: pageWidth - 145 // Ajustar para alinhar com o título
+           })
+           .moveDown(0.5);
       });
       
       doc.moveDown(1);
     }
     
-    // Adicionar áreas de melhoria se disponíveis
+    // ========== SEÇÃO: ÁREAS DE MELHORIA ==========
     if (recommendations?.areasMelhoria && recommendations.areasMelhoria.length > 0) {
+      // Criar o ícone de gráfico crescente (azul) - simulando com um círculo colorido
+      doc.circle(60, doc.y + 10, 15)
+         .fillColor('#03A9F4') // Azul claro
+         .fill();
+      
+      // Adicionar texto "ÁREAS DE MELHORIA" com ícone
       doc.fontSize(14)
         .font('Helvetica-Bold')
-        .fillColor('#FF9800')
-        .text('Áreas para Melhoria', { align: 'left' })
+        .fillColor('#333333')
+        .text('ÁREAS DE MELHORIA', 85, doc.y)
         .moveDown(0.5);
       
+      // Adicionar itens como bullet points
       doc.fontSize(12)
         .font('Helvetica')
         .fillColor('#333333');
       
-      recommendations.areasMelhoria.forEach((area: string, index: number) => {
-        doc.text(`${index + 1}. ${area}`, {
-          align: 'left',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(0.5);
+      recommendations.areasMelhoria.forEach((area: string) => {
+        doc.text('•', 85, doc.y, { continued: true })
+           .text(' ' + area, { 
+             align: 'left',
+             width: pageWidth - 145 // Ajustar para alinhar com o título
+           })
+           .moveDown(0.5);
       });
       
       doc.moveDown(1);
     }
     
-    // Adicionar recomendações específicas se disponíveis
+    // ========== SEÇÃO: RECOMENDAÇÕES ==========
     if (recommendations?.recomendacoes && recommendations.recomendacoes.length > 0) {
+      // Criar o ícone de engrenagem (verde) - simulando com um círculo colorido
+      doc.circle(60, doc.y + 10, 15)
+         .fillColor('#8BC34A') // Verde
+         .fill();
+      
+      // Adicionar texto "RECOMENDAÇÕES" com ícone
       doc.fontSize(14)
         .font('Helvetica-Bold')
-        .fillColor('#1a73e8')
-        .text('Recomendações Específicas', { align: 'left' })
+        .fillColor('#333333')
+        .text('RECOMENDAÇÕES', 85, doc.y)
         .moveDown(0.5);
       
+      // Adicionar itens como bullet points
       doc.fontSize(12)
         .font('Helvetica')
         .fillColor('#333333');
       
-      recommendations.recomendacoes.forEach((recomendacao: string, index: number) => {
-        doc.text(`${index + 1}. ${recomendacao}`, {
-          align: 'left',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(0.5);
+      recommendations.recomendacoes.forEach((recomendacao: string) => {
+        doc.text('•', 85, doc.y, { continued: true })
+           .text(' ' + recomendacao, { 
+             align: 'left',
+             width: pageWidth - 145 // Ajustar para alinhar com o título
+           })
+           .moveDown(0.5);
       });
     }
     
@@ -583,91 +660,42 @@ export class PdfService {
    * @returns Objeto com recomendações
    */
   private getRecommendationsForCombination(iaLevel: string, culturaLevel: string): any {
-    // Estrutura padrão
-    const recommendations = {
-      pontosFortes: [] as string[],
-      areasMelhoria: [] as string[],
-      recomendacoes: [] as string[]
-    };
-    
     const combinedKey = `${iaLevel}/${culturaLevel}`;
     
-    // Definição de pontos fortes para cada combinação
-    // Apenas algumas combinações como exemplo (na implementação completa, todas as 16 combinações seriam mapeadas)
-    if (combinedKey === 'Tradicional/Alta Resistência') {
-      recommendations.pontosFortes = [
-        'Processos tradicionais que garantem estabilidade.',
-        'Estrutura organizacional que mantém consistência.',
-        'Conservação dos métodos já testados, que podem ser úteis como base para mudanças graduais.'
-      ];
-      
-      recommendations.areasMelhoria = [
-        'Necessidade urgente de abrir espaço para novas tecnologias.',
-        'Forte resistência cultural que dificulta a adoção de mudanças.',
-        'Baixo investimento em inovação e atualização tecnológica.'
-      ];
-      
-      recommendations.recomendacoes = [
-        'Capacitação e Sensibilização: Inicie programas de treinamento e workshops para demonstrar os benefícios da IA e da inovação.',
-        'Projetos Piloto: Comece com iniciativas de baixo risco para gerar resultados e construir confiança.',
-        'Comunicação Interna: Estabeleça canais que promovam a troca de ideias e uma cultura de experimentação.'
-      ];
-    } 
-    else if (combinedKey === 'Tradicional/Moderadamente Aberta') {
-      recommendations.pontosFortes = [
-        'Alguma abertura para mudanças e experimentação.',
-        'Interesse em inovação, mesmo que ainda incipiente.',
-        'Capacidade de adaptação em momentos pontuais, demonstrando potencial de evolução.'
-      ];
-      
-      recommendations.areasMelhoria = [
-        'Baixa adoção estruturada de tecnologias de IA.',
-        'Processos tradicionais que limitam a escalabilidade.',
-        'Falta de alinhamento claro entre a estratégia tecnológica e os objetivos de inovação.'
-      ];
-      
-      recommendations.recomendacoes = [
-        'Estratégia Gradual: Desenvolva um roadmap que aproveite a abertura cultural para a introdução de IA.',
-        'Incentivo à Experimentação: Promova pilotos em áreas estratégicas com acompanhamento de métricas de desempenho.',
-        'Fortalecimento da Governança: Estruture processos que integrem a inovação à rotina operacional.'
-      ];
-    }
-    else if (combinedKey === 'Visionária/Altamente Alinhada') {
-      recommendations.pontosFortes = [
-        'Maturidade avançada em IA com aplicações em toda a organização.',
-        'Cultura plenamente alinhada com a inovação e transformação digital.',
-        'Governança e estratégia claras que impulsionam o negócio.'
-      ];
-      
-      recommendations.areasMelhoria = [
-        'Manter a vanguarda em tecnologias emergentes.',
-        'Continuar promovendo a ética e a responsabilidade no uso da IA.',
-        'Expandir para novas fronteiras de inovação e pesquisa.'
-      ];
-      
-      recommendations.recomendacoes = [
-        'Mantenha-se na vanguarda: Continue investindo em P&D de tecnologias emergentes como IA generativa e computação quântica.',
-        'Promova o ecossistema: Desenvolva parcerias com startups, universidades e centros de pesquisa.',
-        'Compartilhe conhecimento: Estabeleça programas para compartilhar boas práticas com o mercado, posicionando-se como referência.'
-      ];
-    }
-    // ... outras combinações seriam implementadas de forma similar
+    // Buscar as recomendações diretamente do arquivo de dados
+    const recommendations = recommendationsData[combinedKey];
     
-    // Se não encontrar recomendações específicas, gera recomendações baseadas em cada nível individualmente
-    if (recommendations.pontosFortes.length === 0) {
+    // Se não encontrar recomendações específicas (o que não deve acontecer), gerar recomendações genéricas
+    if (!recommendations) {
+      const defaultRecommendations = {
+        pontosFortes: [] as string[],
+        areasMelhoria: [] as string[],
+        recomendacoes: [] as string[]
+      };
+      
       // Recomendações genéricas baseadas no nível de IA
       if (iaLevel === 'Tradicional') {
-        recommendations.recomendacoes.push('Inicie a jornada de IA com projetos piloto de baixa complexidade e alto impacto.');
+        defaultRecommendations.recomendacoes.push('Inicie a jornada de IA com projetos piloto de baixa complexidade e alto impacto.');
+      } else if (iaLevel === 'Exploradora') {
+        defaultRecommendations.recomendacoes.push('Expanda as iniciativas de IA existentes e estabeleça processos mais estruturados.');
+      } else if (iaLevel === 'Inovadora') {
+        defaultRecommendations.recomendacoes.push('Consolide a governança de IA e amplie a integração com outras áreas da empresa.');
       } else if (iaLevel === 'Visionária') {
-        recommendations.recomendacoes.push('Continue investindo em inovação e expansão das tecnologias de IA já implementadas.');
+        defaultRecommendations.recomendacoes.push('Continue investindo em inovação e expansão das tecnologias de IA já implementadas.');
       }
       
       // Recomendações genéricas baseadas no nível de cultura
       if (culturaLevel === 'Alta Resistência') {
-        recommendations.recomendacoes.push('Implemente programas de sensibilização e engajamento para reduzir a resistência cultural.');
+        defaultRecommendations.recomendacoes.push('Implemente programas de sensibilização e engajamento para reduzir a resistência cultural.');
+      } else if (culturaLevel === 'Moderadamente Aberta') {
+        defaultRecommendations.recomendacoes.push('Fortaleça a comunicação interna e promova iniciativas de capacitação para ampliar a abertura cultural.');
+      } else if (culturaLevel === 'Favorável') {
+        defaultRecommendations.recomendacoes.push('Aproveite a cultura favorável para acelerar projetos de inovação e expandir iniciativas bem-sucedidas.');
       } else if (culturaLevel === 'Altamente Alinhada') {
-        recommendations.recomendacoes.push('Aproveite a cultura favorável para acelerar a adoção de novas tecnologias.');
+        defaultRecommendations.recomendacoes.push('Aproveite a cultura favorável para acelerar a adoção de novas tecnologias e manter o ritmo de inovação.');
       }
+      
+      return defaultRecommendations;
     }
     
     return recommendations;
