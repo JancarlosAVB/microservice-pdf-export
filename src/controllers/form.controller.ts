@@ -243,13 +243,29 @@ export class FormController {
             // Gera variações baseadas nos scores
             const variations = await this.formService.generateVariations({ 
                 ...formData,
+                pergunta_1: this.mapTextToNumber(formData.pergunta_1),
+                pergunta_2: this.mapTextToNumber(formData.pergunta_2),
+                pergunta_3: this.mapTextToNumber(formData.pergunta_3),
+                pergunta_4: this.mapTextToNumber(formData.pergunta_4),
+                pergunta_5: this.mapTextToNumber(formData.pergunta_5),
+                pergunta_6: this.mapTextToNumber(formData.pergunta_6),
+                pergunta_7: this.mapTextToNumber(formData.pergunta_7),
+                pergunta_8: this.mapTextToNumber(formData.pergunta_8),
+                pergunta_9: this.mapTextToNumber(formData.pergunta_9),
+                pergunta_10: this.mapTextToNumber(formData.pergunta_10),
+                pergunta_11: this.mapTextToNumber(formData.pergunta_11),
+                pergunta_12: this.mapTextToNumber(formData.pergunta_12),
+                pergunta_13: this.mapTextToNumber(formData.pergunta_13),
+                pergunta_14: this.mapTextToNumber(formData.pergunta_14),
+                pergunta_15: this.mapTextToNumber(formData.pergunta_15),
+                pergunta_16: this.mapTextToNumber(formData.pergunta_16),
+                pergunta_17: this.mapTextToNumber(formData.pergunta_17),
+                pergunta_18: this.mapTextToNumber(formData.pergunta_18),
+                pergunta_19: this.mapTextToNumber(formData.pergunta_19),
+                pergunta_20: this.mapTextToNumber(formData.pergunta_20),
                 submission_id: formData.submission_id || 0,
-                empresa: formData.empresa || 'Empresa',
-                pergunta_1: 0, pergunta_2: 0, pergunta_3: 0, pergunta_4: 0, pergunta_5: 0,
-                pergunta_6: 0, pergunta_7: 0, pergunta_8: 0, pergunta_9: 0, pergunta_10: 0,
-                pergunta_11: 0, pergunta_12: 0, pergunta_13: 0, pergunta_14: 0, pergunta_15: 0,
-                pergunta_16: 0, pergunta_17: 0, pergunta_18: 0, pergunta_19: 0, pergunta_20: 0
-            }, finalIaScore, finalCulturaScore);
+                empresa: formData.empresa || 'Empresa'
+            });
             
             res.status(200).json({
                 success: true,
