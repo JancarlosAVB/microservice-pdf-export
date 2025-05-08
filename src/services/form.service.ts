@@ -203,7 +203,7 @@ export class FormService {
         }
     }
 
-    private calculateIAScore(formData: FormData): number {
+    public calculateIAScore(formData: FormData): number {
         const iaQuestions = [
             formData.pergunta_1,
             formData.pergunta_2,
@@ -219,7 +219,7 @@ export class FormService {
         return this.calculateTotalScore(iaQuestions);
     }
 
-    private calculateCulturaScore(formData: FormData): number {
+    public calculateCulturaScore(formData: FormData): number {
         const culturaQuestions = [
             formData.pergunta_11,
             formData.pergunta_12,
