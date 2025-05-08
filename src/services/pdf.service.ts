@@ -6,25 +6,7 @@ import { Readable } from 'stream';
 import * as fs from 'fs';
 import * as path from 'path';
 import { DiagnosticService } from './diagnostic.service';
-
-// Classe personalizada para capturar os chunks do PDF
-class WritableBufferStream {
-  private chunks: Buffer[] = [];
-  private onFinish: (buffer: Buffer) => void;
-
-  constructor(onFinish: (buffer: Buffer) => void) {
-    this.onFinish = onFinish;
-  }
-
-  write(chunk: Buffer): void {
-    this.chunks.push(chunk);
-  }
-
-  end(): void {
-    const buffer = Buffer.concat(this.chunks);
-    this.onFinish(buffer);
-  }
-}
+import { WritableBufferStream } from '../utils/buffer-stream';
 
 export class PdfService {
   private chartService: ChartService;
@@ -294,7 +276,6 @@ export class PdfService {
     formData?: Record<string, any>
   ): Promise<Readable> {
     // Configurar o stream de resposta
-    const chunks: Buffer[] = [];
     const stream = new Readable({
       read() {
         // Implementação vazia pois preenchemos o stream após o PDF ser gerado
@@ -323,13 +304,14 @@ export class PdfService {
         }
       });
       
-      // Configurar o pipe para capturar todo o conteúdo
+      // Configurar o WritableBufferStream para capturar todo o conteúdo
       const bufferStream = new WritableBufferStream((pdfBuffer) => {
         stream.push(pdfBuffer);
         stream.push(null); // Finalizar o stream
       });
       
-      doc.pipe(bufferStream as any);
+      // Pipe do doc para o buffer stream - agora funciona corretamente
+      doc.pipe(bufferStream);
       
       // Verificar se temos dados do WordPress com formData
       const usingWordPressData = formData && 
@@ -856,258 +838,41 @@ export class PdfService {
       areasMelhoria: [] as string[],
       recomendacoes: [] as string[]
     };
-    
+
     const combinedKey = `${iaLevel}/${culturaLevel}`;
-    
-    // Definição de pontos fortes para cada combinação
-    // Apenas algumas combinações como exemplo (na implementação completa, todas as 16 combinações seriam mapeadas)
-    if (combinedKey === 'Tradicional/Alta Resistência') {
-      recommendations.pontosFortes = [
-        'Processos tradicionais que garantem estabilidade.',
-        'Estrutura organizacional que mantém consistência.',
-        'Conservação dos métodos já testados, que podem ser úteis como base para mudanças graduais.'
-      ];
-      
-      recommendations.areasMelhoria = [
-        'Necessidade urgente de abrir espaço para novas tecnologias.',
-        'Forte resistência cultural que dificulta a adoção de mudanças.',
-        'Baixo investimento em inovação e atualização tecnológica.'
-      ];
-      
-      recommendations.recomendacoes = [
-        'Capacitação e Sensibilização: Inicie programas de treinamento e workshops para demonstrar os benefícios da IA e da inovação.',
-        'Projetos Piloto: Comece com iniciativas de baixo risco para gerar resultados e construir confiança.',
-        'Comunicação Interna: Estabeleça canais que promovam a troca de ideias e uma cultura de experimentação.'
-      ];
-    } 
-    else if (combinedKey === 'Tradicional/Moderadamente Aberta') {
-      recommendations.pontosFortes = [
-        'Alguma abertura para mudanças e experimentação.',
-        'Interesse em inovação, mesmo que ainda incipiente.',
-        'Capacidade de adaptação em momentos pontuais, demonstrando potencial de evolução.'
-      ];
-      
-      recommendations.areasMelhoria = [
-        'Baixa adoção estruturada de tecnologias de IA.',
-        'Processos tradicionais que limitam a escalabilidade.',
-        'Falta de alinhamento claro entre a estratégia tecnológica e os objetivos de inovação.'
-      ];
-      
-      recommendations.recomendacoes = [
-        'Estratégia Gradual: Desenvolva um roadmap que aproveite a abertura cultural para a introdução de IA.',
-        'Incentivo à Experimentação: Promova pilotos em áreas estratégicas com acompanhamento de métricas de desempenho.',
-        'Fortalecimento da Governança: Estruture processos que integrem a inovação à rotina operacional.'
-      ];
+
+    // Adicionar recomendações específicas baseadas na combinação
+    // Implementação simplificada para o exemplo
+    if (combinedKey.includes('Tradicional')) {
+      recommendations.pontosFortes.push('Processos tradicionais bem estabelecidos.');
+      recommendations.areasMelhoria.push('Necessidade de modernização tecnológica.');
+      recommendations.recomendacoes.push('Iniciar projetos piloto de IA em áreas estratégicas.');
     }
-    else if (combinedKey === 'Visionária/Altamente Alinhada') {
-      recommendations.pontosFortes = [
-        'Maturidade avançada em IA com aplicações em toda a organização.',
-        'Cultura plenamente alinhada com a inovação e transformação digital.',
-        'Governança e estratégia claras que impulsionam o negócio.'
-      ];
-      
-      recommendations.areasMelhoria = [
-        'Manter a vanguarda em tecnologias emergentes.',
-        'Continuar promovendo a ética e a responsabilidade no uso da IA.',
-        'Expandir para novas fronteiras de inovação e pesquisa.'
-      ];
-      
-      recommendations.recomendacoes = [
-        'Mantenha-se na vanguarda: Continue investindo em P&D de tecnologias emergentes como IA generativa e computação quântica.',
-        'Promova o ecossistema: Desenvolva parcerias com startups, universidades e centros de pesquisa.',
-        'Compartilhe conhecimento: Estabeleça programas para compartilhar boas práticas com o mercado, posicionando-se como referência.'
-      ];
+
+    if (combinedKey.includes('Visionária')) {
+      recommendations.pontosFortes.push('Adoção avançada de tecnologias de IA.');
+      recommendations.areasMelhoria.push('Manter-se na vanguarda das inovações.');
+      recommendations.recomendacoes.push('Consolidar centro de excelência em IA na organização.');
     }
-    // ... outras combinações seriam implementadas de forma similar
-    
-    // Se não encontrar recomendações específicas, gera recomendações baseadas em cada nível individualmente
-    if (recommendations.pontosFortes.length === 0) {
-      // Recomendações genéricas baseadas no nível de IA
-      if (iaLevel === 'Tradicional') {
-        recommendations.recomendacoes.push('Inicie a jornada de IA com projetos piloto de baixa complexidade e alto impacto.');
-      } else if (iaLevel === 'Visionária') {
-        recommendations.recomendacoes.push('Continue investindo em inovação e expansão das tecnologias de IA já implementadas.');
-      }
-      
-      // Recomendações genéricas baseadas no nível de cultura
-      if (culturaLevel === 'Alta Resistência') {
-        recommendations.recomendacoes.push('Implemente programas de sensibilização e engajamento para reduzir a resistência cultural.');
-      } else if (culturaLevel === 'Altamente Alinhada') {
-        recommendations.recomendacoes.push('Aproveite a cultura favorável para acelerar a adoção de novas tecnologias.');
-      }
+
+    if (combinedKey.includes('Alta Resistência')) {
+      recommendations.pontosFortes.push('Estrutura organizacional estável.');
+      recommendations.areasMelhoria.push('Necessidade de promover cultura de inovação.');
+      recommendations.recomendacoes.push('Implementar programas de sensibilização e treinamento em IA.');
     }
-    
+
+    if (combinedKey.includes('Altamente Alinhada')) {
+      recommendations.pontosFortes.push('Cultura organizacional favorável à inovação.');
+      recommendations.areasMelhoria.push('Aproveitar melhor o potencial da cultura inovadora.');
+      recommendations.recomendacoes.push('Expandir programas de inovação aberta e co-criação.');
+    }
+
     return recommendations;
   }
-  
+
   /**
-   * Obtenha textos de diagnóstico considerando a combinação de IA e cultura
-   * @param score Pontuação (IA ou cultura)
-   * @param level Nível identificado 
-   * @param type Tipo de diagnóstico ('ia' ou 'cultura')
+   * Método para calcular a pontuação total de um gráfico
    */
-  private getCombinedDiagnosticText(score: number, level: string, type: 'ia' | 'cultura'): string {
-    // Obter o texto base dependendo do tipo
-    if (type === 'ia') {
-      return this.getIADiagnosticText(score, level);
-    } else {
-      return this.getCultureDiagnosticText(score, level);
-    }
-  }
-
-  private generateInsightsPage(doc: any, iaChartData: RadarChartData, culturaChartData: RadarChartData, options: PdfOptions): void {
-    // Calcular pontuações
-    const iaScore = this.calculateScore(iaChartData);
-    const culturaScore = this.calculateScore(culturaChartData);
-    
-    // Garantir que as pontuações foram passadas ou calculadas
-    const finalIaScore = options?.iaScore || iaScore;
-    const finalCulturaScore = options?.culturaScore || culturaScore;
-    
-    // Obter insights usando o diagnostic service
-    const insights = this.diagnosticService.getDetailedInsights(finalIaScore, finalCulturaScore);
-    const recommendations = this.diagnosticService.getRecommendationText(finalIaScore, finalCulturaScore);
-    
-    // Obter níveis
-    const iaLevel = options?.iaLevel || insights.ia_level;
-    const culturaLevel = options?.culturaLevel || insights.cultura_level;
-    
-    // Texto do diagnóstico combinado
-    const diagnosticText = insights.diagnostic_text;
-
-    // Adicionar nova página para insights
-    doc.addPage();
-    
-    // Título dos insights
-    doc.fontSize(18)
-       .font('Helvetica-Bold')
-       .fillColor('#1E2A4A')
-       .text('Diagnóstico e Insights', { align: 'center' })
-       .moveDown(0.5);
-    
-    // Mostrar níveis de maturidade
-    doc.fontSize(14)
-       .text('Níveis de Maturidade', { align: 'left' })
-       .moveDown(0.5);
-    
-    // Desenhar tabela de níveis
-    const startY = doc.y;
-    
-    // Desenhar célula de cabeçalho para IA
-    doc.rect(doc.x, startY, 150, 25)
-       .fill('#1E2A4A');
-    
-    doc.fillColor('white')
-       .text('Maturidade em IA', doc.x + 5, startY + 7);
-    
-    // Desenhar célula com o nível de IA
-    doc.rect(doc.x + 150, startY, 150, 25)
-       .fill('#E6EFF7');
-    
-    const iaLevelColor = finalIaScore >= 34 ? '#006400' : // Verde para nível alto
-                      finalIaScore >= 27 ? '#4682B4' : // Azul para nível bom
-                      finalIaScore >= 18 ? '#FF8C00' : // Laranja para nível médio
-                      '#DC143C'; // Vermelho para nível baixo
-    
-    doc.fillColor(iaLevelColor)
-       .font('Helvetica-Bold')
-       .text(`${iaLevel} (${finalIaScore} pts)`, doc.x + 155, startY + 7);
-    
-    // Desenhar célula de cabeçalho para Cultura
-    doc.rect(doc.x, startY + 25, 150, 25)
-       .fill('#1E2A4A');
-    
-    doc.fillColor('white')
-       .text('Alinhamento Cultural', doc.x + 5, startY + 32);
-    
-    // Desenhar célula com o nível de cultura
-    doc.rect(doc.x + 150, startY + 25, 150, 25)
-       .fill('#E6EFF7');
-    
-    const culturaLevelColor = finalCulturaScore >= 34 ? '#006400' : // Verde para nível alto
-                           finalCulturaScore >= 27 ? '#4682B4' : // Azul para nível bom
-                           finalCulturaScore >= 18 ? '#FF8C00' : // Laranja para nível médio
-                           '#DC143C'; // Vermelho para nível baixo
-    
-    doc.fillColor(culturaLevelColor)
-       .text(`${culturaLevel} (${finalCulturaScore} pts)`, doc.x + 155, startY + 32);
-    
-    doc.moveDown(2);
-    
-    // Mostrar diagnóstico combinado
-    doc.fillColor('#1E2A4A')
-       .fontSize(14)
-       .font('Helvetica-Bold')
-       .text('Diagnóstico Combinado', { align: 'left' })
-       .moveDown(0.5);
-    
-    doc.fontSize(12)
-       .font('Helvetica')
-       .fillColor('#333333')
-       .text(diagnosticText, { align: 'justify' })
-       .moveDown(1.5);
-    
-    // Mostrar recomendações - usar diagnosticService
-    doc.fillColor('#1E2A4A')
-       .fontSize(14)
-       .font('Helvetica-Bold')
-       .text('Pontos Fortes', { align: 'left' })
-       .moveDown(0.5);
-    
-    // Listar pontos fortes
-    recommendations.pontos_fortes.forEach((ponto: string) => {
-      doc.fontSize(12)
-         .font('Helvetica')
-         .fillColor('#333333')
-         .text(`• ${ponto}`, { align: 'left', indent: 10 })
-         .moveDown(0.5);
-    });
-    
-    doc.moveDown(0.5);
-    
-    // Áreas de melhoria
-    doc.fillColor('#1E2A4A')
-       .fontSize(14)
-       .font('Helvetica-Bold')
-       .text('Áreas de Melhoria', { align: 'left' })
-       .moveDown(0.5);
-    
-    // Listar áreas de melhoria
-    recommendations.areas_melhoria.forEach((area: string) => {
-      doc.fontSize(12)
-         .font('Helvetica')
-         .fillColor('#333333')
-         .text(`• ${area}`, { align: 'left', indent: 10 })
-         .moveDown(0.5);
-    });
-    
-    doc.moveDown(0.5);
-    
-    // Recomendações específicas
-    doc.fillColor('#1E2A4A')
-       .fontSize(14)
-       .font('Helvetica-Bold')
-       .text('Recomendações', { align: 'left' })
-       .moveDown(0.5);
-    
-    // Listar recomendações
-    recommendations.recomendacoes.forEach((rec: string) => {
-      doc.fontSize(12)
-         .font('Helvetica')
-         .fillColor('#333333')
-         .text(`• ${rec}`, { align: 'left', indent: 10 })
-         .moveDown(0.5);
-    });
-    
-    if (!recommendations.pontos_fortes.length && !recommendations.areas_melhoria.length && !recommendations.recomendacoes.length) {
-      doc.fontSize(12)
-         .font('Helvetica')
-         .fillColor('#333333')
-         .text('Dados insuficientes para gerar recomendações específicas.', { align: 'left' })
-         .moveDown(0.5);
-    }
-  }
-  
   private calculateScore(chartData: RadarChartData): number {
     if (!chartData || !chartData.datasets || chartData.datasets.length === 0) {
       return 0;
@@ -1118,6 +883,57 @@ export class PdfService {
   }
 
   /**
+   * Método para gerar página de insights para o PDF
+   */
+  private generateInsightsPage(doc: any, iaChartData: RadarChartData, culturaChartData: RadarChartData, options: PdfOptions): void {
+    // Calcular pontuações
+    const iaScore = this.calculateScore(iaChartData);
+    const culturaScore = this.calculateScore(culturaChartData);
+    
+    // Obter insights e análises via DiagnosticService
+    const insights = this.diagnosticService.getDetailedInsights(iaScore, culturaScore);
+    const recommendations = this.diagnosticService.getRecommendationText(iaScore, culturaScore);
+    
+    // Adicionar página com conteúdo
+    doc.addPage();
+    
+    // Título da página
+    doc.fontSize(18)
+       .font('Helvetica-Bold')
+       .fillColor('#1E2A4A')
+       .text('Análise de Diagnóstico', { align: 'center' })
+       .moveDown(1);
+       
+    // Exibir resultados da análise
+    doc.fontSize(14)
+       .text('Resultados da Análise', { align: 'left' })
+       .moveDown(0.5);
+       
+    // Exibir texto da análise
+    doc.fontSize(12)
+       .font('Helvetica')
+       .fillColor('#333333')
+       .text(insights.diagnostic_text, { align: 'justify' })
+       .moveDown(1.5);
+       
+    // Exibir recomendações
+    doc.fontSize(14)
+       .font('Helvetica-Bold')
+       .fillColor('#1E2A4A')
+       .text('Recomendações', { align: 'left' })
+       .moveDown(0.5);
+       
+    // Listar recomendações
+    recommendations.recomendacoes.forEach((rec: string) => {
+      doc.fontSize(12)
+         .font('Helvetica')
+         .fillColor('#333333')
+         .text(`• ${rec}`, { align: 'left', indent: 10 })
+         .moveDown(0.5);
+    });
+  }
+
+  /**
    * Gera um PDF com gráfico radar
    * @param chartData Dados para o gráfico radar
    * @param options Opções de configuração do PDF
@@ -1125,7 +941,6 @@ export class PdfService {
    */
   public async generateChartPdf(chartData: RadarChartData, options: PdfOptions = {}): Promise<Readable> {
     // Configurar o stream de resposta
-    const chunks: Buffer[] = [];
     const stream = new Readable({
       read() {
         // Implementação vazia pois preenchemos o stream após o PDF ser gerado
@@ -1154,13 +969,14 @@ export class PdfService {
         }
       });
       
-      // Configurar o pipe para capturar todo o conteúdo
+      // Configurar o WritableBufferStream para capturar todo o conteúdo
       const bufferStream = new WritableBufferStream((pdfBuffer) => {
         stream.push(pdfBuffer);
         stream.push(null); // Finalizar o stream
       });
       
-      doc.pipe(bufferStream as any);
+      // Pipe do doc para o buffer stream
+      doc.pipe(bufferStream);
       
       // Adicionar título ao PDF, se fornecido
       if (options.title) {

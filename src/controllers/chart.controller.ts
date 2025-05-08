@@ -373,7 +373,7 @@ export class ChartController {
         res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
         
         // Corrigindo o problema do pipe
-        pdfStream.on('data', (chunk) => {
+        pdfStream.on('data', (chunk: Buffer) => {
           res.write(chunk);
         });
         
@@ -381,7 +381,7 @@ export class ChartController {
           res.end();
         });
         
-        pdfStream.on('error', (err) => {
+        pdfStream.on('error', (err: Error) => {
           console.error('Erro ao processar o stream de PDF:', err);
           if (!res.headersSent) {
             res.status(500).json({
@@ -579,7 +579,7 @@ export class ChartController {
         res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
         
         // Corrigindo o problema do pipe
-        pdfStream.on('data', (chunk) => {
+        pdfStream.on('data', (chunk: Buffer) => {
           res.write(chunk);
         });
         
@@ -587,7 +587,7 @@ export class ChartController {
           res.end();
         });
         
-        pdfStream.on('error', (err) => {
+        pdfStream.on('error', (err: Error) => {
           console.error('Erro ao processar o stream de PDF:', err);
           if (!res.headersSent) {
             res.status(500).json({
