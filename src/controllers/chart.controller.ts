@@ -283,4 +283,48 @@ export class ChartController {
       }
     }
   }
+
+  /**
+   * Retorna o relatório de diagnóstico em formato JSON
+   * @param req Requisição Express
+   * @param res Resposta Express
+   */
+  public async getDiagnosticReport(req: Request, res: Response): Promise<void> {
+    try {
+      const { submission_id } = req.params;
+      
+      if (!submission_id) {
+        res.status(400).json({
+          success: false,
+          message: 'ID da submissão é obrigatório'
+        });
+        return;
+      }
+
+      // Aqui você deve implementar a lógica para buscar os dados do diagnóstico
+      // usando o submission_id. Por enquanto, retornaremos um objeto de exemplo
+      const diagnosticReport = {
+        submission_id,
+        ia_score: 0,
+        cultura_score: 0,
+        timestamp: new Date().toISOString(),
+        status: 'pending'
+      };
+
+      res.status(200).json({
+        success: true,
+        data: diagnosticReport
+      });
+    } catch (error) {
+      console.error('Erro ao buscar relatório de diagnóstico:', error);
+      
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          message: 'Erro ao buscar relatório de diagnóstico',
+          error: error instanceof Error ? error.message : 'Erro desconhecido'
+        });
+      }
+    }
+  }
 }
