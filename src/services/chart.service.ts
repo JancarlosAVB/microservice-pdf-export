@@ -16,27 +16,25 @@ export class ChartService {
     const ctx = canvas.getContext('2d') as unknown as CanvasRenderingContext2D;
     const { labels, datasets, width = 800, height = 800, title = '' } = options;
     
-    // Aumentar a resolução do canvas para melhorar a qualidade
-    canvas.width = 1200;
-    canvas.height = 1200;
+    // Garantir dimensões exatas para todos os gráficos
+    canvas.width = width * 2; // Alta resolução
+    canvas.height = height * 2; // Alta resolução
     
-    // Define cores fixas para cada tipo de gráfico com melhor contraste
-    const isIAChart = title.toLowerCase().includes('inteligência') || 
-                      title.toLowerCase().includes('ia') || 
-                      labels.some(label => label.toLowerCase().includes('ia'));
+    // Determinar se é gráfico de IA ou Cultura sem depender do título
+    const isIAChart = this.isIAChart(labels);
     
-    // Cores para cada tipo de gráfico com melhor opacidade para visualização
+    // Cores consistentes para cada tipo de gráfico
     const chartColors = isIAChart ? 
       { backgroundColor: 'rgba(54, 162, 235, 0.3)', borderColor: 'rgb(54, 162, 235)', pointColor: 'rgb(54, 162, 235)' } : 
       { backgroundColor: 'rgba(255, 99, 132, 0.3)', borderColor: 'rgb(255, 99, 132)', pointColor: 'rgb(255, 99, 132)' };
     
-    // Processar dados para garantir que estejam na escala correta (1-4)
+    // Processar dados de forma idêntica para ambos os gráficos
     const processedDatasets = datasets.map(dataset => {
       // Garantir que todos os valores estejam entre 1 e 4
       const processedData = dataset.data.map(value => {
         if (value < 1) return 1;
         if (value > 4) return 4;
-        return Math.round(value); // Arredondar para ter valores inteiros
+        return Math.round(value); // Arredondar para valores inteiros
       });
       
       return {
@@ -44,17 +42,17 @@ export class ChartService {
         data: processedData,
         backgroundColor: chartColors.backgroundColor,
         borderColor: chartColors.borderColor,
-        borderWidth: 3, // Aumentar espessura da linha
+        borderWidth: 3,
         pointBackgroundColor: chartColors.pointColor,
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: chartColors.borderColor,
-        pointRadius: 6, // Pontos maiores
-        pointHoverRadius: 8
+        pointRadius: 5,
+        pointHoverRadius: 7
       };
     });
     
-    // Configurar o gráfico com opções de alta qualidade
+    // Configurações idênticas para ambos os tipos de gráfico
     const config: ChartConfiguration = {
       type: 'radar' as ChartType,
       data: {
@@ -62,99 +60,81 @@ export class ChartService {
         datasets: processedDatasets,
       },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        responsive: false, // Desabilitar responsividade para manter tamanho exato
+        maintainAspectRatio: true, // Manter proporção
         plugins: {
           title: {
             display: !!title,
             text: title,
             font: {
-              size: 16, // Aumentar tamanho do título
+              size: 14,
               weight: 'bold',
             },
             padding: {
-              top: 20,
-              bottom: 20
+              top: 10,
+              bottom: 10
             }
           },
           legend: {
-            display: false, // Ocultar a legenda para simplificar
-            position: 'top' as const,
+            display: false, // Ocultar legenda para ambos os gráficos
           },
           tooltip: {
             enabled: true,
             backgroundColor: 'rgba(0,0,0,0.8)',
             titleFont: {
-              size: 14
+              size: 12
             },
             bodyFont: {
-              size: 14
+              size: 12
             },
-            padding: 10
+            padding: 8
           }
         },
         scales: {
           r: {
             min: 0,
-            max: 4, // Escala de 1-4
+            max: 4,
             beginAtZero: true,
             ticks: {
               stepSize: 1,
               backdropColor: 'transparent',
               font: {
-                size: 30, // Fonte maior para os números das escalas
+                size: 14,
                 weight: 'bold'
               },
               color: '#333',
-              padding: 5
             },
             grid: {
-              color: 'rgba(0, 0, 0, 0.2)', // Linhas de grade mais visíveis
-              lineWidth: 2, // Linhas mais grossas
+              color: 'rgba(0, 0, 0, 0.2)',
+              lineWidth: 1,
               circular: true
             },
             angleLines: {
-              color: 'rgba(0, 0, 0, 0.2)', // Linhas de ângulo mais visíveis
-              lineWidth: 2 // Linhas mais grossas
+              color: 'rgba(0, 0, 0, 0.2)',
+              lineWidth: 1
             },
             pointLabels: {
               font: {
-                size: 30, // Fonte maior para os textos dos eixos
+                size: 14,
                 weight: 'bold'
               },
-              color: '#000000', // Cor mais escura para melhor legibilidade
-              padding: 15, // Mais espaço entre labels
-              // Quebrar linhas longas para melhor formatação
+              color: '#000000',
+              padding: 6,
+              // Limitar tamanho dos rótulos para manter proporções idênticas
               callback: function(value: string) {
-                if (value.length > 20) {
-                  const words = value.split(' ');
-                  let result = '';
-                  let line = '';
-                  
-                  for (const word of words) {
-                    if ((line + word).length > 15) {
-                      result += line + '\n'; // Usando a sequência de escape correta
-                      line = word + ' ';
-                    } else {
-                      line += word + ' ';
-                    }
-                  }
-                  
-                  return result + line.trim();
-                }
-                return value;
+                return value.length > 12 ? value.substring(0, 12) + '...' : value;
               }
             }
           }
         },
         elements: {
           line: {
-            tension: 0.2, // Adicionar suavidade às linhas
-            borderWidth: 3 // Linhas mais grossas
+            tension: 0.1,
+            borderWidth: 2
           },
           point: {
-            radius: 6, // Pontos maiores
-            hoverRadius: 8,
+            radius: 5,
+            hoverRadius: 7,
             borderWidth: 2
           }
         }
@@ -191,5 +171,65 @@ export class ChartService {
     }
     
     return colors;
+  }
+
+  /**
+   * Determina se o gráfico é de IA ou Cultura com base nos rótulos
+   * @param labels Array de rótulos do gráfico
+   * @returns true se for gráfico de IA, false se for gráfico de Cultura
+   */
+  private isIAChart(labels: string[]): boolean {
+    // Palavras-chave associadas ao gráfico de IA
+    const iaKeywords = [
+      'estratégia', 'estrat',
+      'processos', 'process',
+      'governança', 'governan',
+      'dados', 'data',
+      'tecnologia', 'tecnolog',
+      'infraestrutura', 'infra',
+      'automação', 'automa',
+      'inteligência', 'ia'
+    ];
+    
+    // Palavras-chave associadas ao gráfico de Cultura
+    const culturaKeywords = [
+      'cultura', 'cultur',
+      'liderança', 'lideran',
+      'pessoas', 'colaborador',
+      'mudança', 'mudan',
+      'engajamento', 'engaja',
+      'adoção', 'adoc',
+      'resistência', 'resist',
+      'comunicação', 'comunica'
+    ];
+    
+    // Contar quantas palavras-chave de cada tipo aparecem nos rótulos
+    let iaKeywordCount = 0;
+    let culturaKeywordCount = 0;
+    
+    // Verificar cada rótulo
+    for (const label of labels) {
+      const lowerLabel = label.toLowerCase();
+      
+      // Verificar palavras-chave de IA
+      for (const keyword of iaKeywords) {
+        if (lowerLabel.includes(keyword)) {
+          iaKeywordCount++;
+          break; // Se encontrou uma keyword de IA neste rótulo, não precisa verificar as outras
+        }
+      }
+      
+      // Verificar palavras-chave de Cultura
+      for (const keyword of culturaKeywords) {
+        if (lowerLabel.includes(keyword)) {
+          culturaKeywordCount++;
+          break; // Se encontrou uma keyword de Cultura neste rótulo, não precisa verificar as outras
+        }
+      }
+    }
+    
+    // Determinar o tipo de gráfico com base na contagem de palavras-chave
+    // Se houver mais palavras-chave de IA do que de Cultura, é um gráfico de IA
+    return iaKeywordCount >= culturaKeywordCount;
   }
 } 

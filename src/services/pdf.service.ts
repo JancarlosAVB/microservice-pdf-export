@@ -132,13 +132,16 @@ export class PdfService {
     // Configurações padrão
     const pageSize = options.pageSize || 'A4';
     const pageOrientation = options.pageOrientation || 'portrait';
-    // Configurações do gráfico ajustadas para melhor qualidade e visualização
-    const chartWidth = 250;  // Reduzido para 50% do tamanho anterior
-    const chartHeight = 250; // Altura ajustada para manter proporções
     
-    // Criar os canvas e gerar os gráficos
-    const iaCanvas = createCanvas(chartWidth, chartHeight);
-    const culturaCanvas = createCanvas(chartWidth, chartHeight);
+    // Definir tamanho EXATO para ambos os gráficos - mesmo tamanho garantido
+    const chartSize = 300; // Tamanho fixo para ambos os gráficos
+    
+    // Garantir que a análise combinada seja sempre pulada, evitando textos duplicados
+    options.skipCombinedAnalysis = true;
+    
+    // Criar os canvas com EXATAMENTE o mesmo tamanho
+    const iaCanvas = createCanvas(chartSize, chartSize);
+    const culturaCanvas = createCanvas(chartSize, chartSize);
     
     // Garantir que os dados não sejam zerados
     const iaDatasets = iaChartData.datasets.map(dataset => ({
@@ -156,20 +159,20 @@ export class PdfService {
       ...iaChartData,
       title: '',  // Sem título no gráfico, será adicionado como texto no PDF
       datasets: iaDatasets,
-      width: chartWidth,
-      height: chartHeight
+      width: chartSize,
+      height: chartSize
     });
     
     this.chartService.generateRadarChart(culturaCanvas, {
       ...culturaChartData,
       title: '',  // Sem título no gráfico, será adicionado como texto no PDF
       datasets: culturaDatasets,
-      width: chartWidth,
-      height: chartHeight
+      width: chartSize,
+      height: chartSize
     });
     
-    // Garantir que os gráficos sejam renderizados
-    await new Promise<void>(resolve => setTimeout(resolve, 200));
+    // Garantir que os gráficos sejam renderizados (aumentando o tempo para garantir renderização completa)
+    await new Promise<void>(resolve => setTimeout(resolve, 300));
     
     // Criar o documento PDF com margens menores
     const doc = new PDFDocument({ 
@@ -252,12 +255,12 @@ export class PdfService {
        .moveDown(0.5);
     
     // Adicionar gráfico IA centralizado com alta qualidade
-    const iaChartWidth = 225; // Reduzido para 50% do tamanho anterior
-    const xCenterIA = (doc.page.width - iaChartWidth) / 2;
-    doc.image(iaCanvas.toBuffer(), xCenterIA, doc.y, { width: iaChartWidth, align: 'center' });
+    const chartDisplaySize = 250; // Tamanho IDÊNTICO para exibição de ambos os gráficos no PDF
+    const xCenterIA = (doc.page.width - chartDisplaySize) / 2;
+    doc.image(iaCanvas.toBuffer(), xCenterIA, doc.y, { width: chartDisplaySize, align: 'center' });
     
     // Avançar o cursor para depois do gráfico de IA
-    doc.y += chartHeight * 0.85 + 40;
+    doc.y += chartDisplaySize * 0.85 + 40;
     
     // Seção de Cultura
     doc.fontSize(14)
@@ -278,13 +281,12 @@ export class PdfService {
        .text(culturaDescription, 40, doc.y + 5, { width: fullWidth, align: 'center' })
        .moveDown(0.5);
     
-    // Adicionar gráfico Cultura centralizado com alta qualidade
-    const culturaChartWidth = 225; // Reduzido para 50% do tamanho anterior
-    const xCenterCultura = (doc.page.width - culturaChartWidth) / 2;
-    doc.image(culturaCanvas.toBuffer(), xCenterCultura, doc.y, { width: culturaChartWidth, align: 'center' });
+    // Adicionar gráfico Cultura centralizado com alta qualidade - MESMO tamanho do gráfico IA
+    const xCenterCultura = (doc.page.width - chartDisplaySize) / 2;
+    doc.image(culturaCanvas.toBuffer(), xCenterCultura, doc.y, { width: chartDisplaySize, align: 'center' });
     
     // Avançar o cursor para depois do gráfico de Cultura
-    doc.y += chartHeight * 0.85 + 40;
+    doc.y += chartDisplaySize * 0.85 + 40;
     
     // Adicionar nova página para a seção 'O que isso significa para sua empresa?'
     doc.addPage();
@@ -321,37 +323,6 @@ export class PdfService {
          .text(' ' + point, { width: doc.page.width - 140, align: 'left' })
          .moveDown(1);
     });
-    
-    // Adicionar diagnóstico de cultura
-    doc.fontSize(12)
-      .font('Helvetica')
-      .fillColor('#333333')
-      .text(this.getCultureDiagnosticText(culturaScore, culturaLevel), {
-        align: 'justify',
-        width: pageWidth - (margin * 2)
-      })
-      .moveDown(1);
-    
-      
-    // Adicionar diagnóstico combinado se existir
-    if (analysis.diagnostic_text && !options.skipCombinedAnalysis) {
-      doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#333333')
-        .text('Análise Combinada', { align: 'left' })
-        .moveDown(0.5);
-        
-      doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333')
-        .text(analysis.diagnostic_text, {
-          align: 'justify',
-          width: pageWidth - (margin * 2)
-        })
-        .moveDown(2);
-    } else {
-      doc.moveDown(1);
-    }
     
     // Adicionar nova página para recomendações
     doc.addPage();
