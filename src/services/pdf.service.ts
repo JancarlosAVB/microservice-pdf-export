@@ -191,7 +191,7 @@ export class PdfService {
     
     // Cabeçalho azul escuro para a primeira página
     doc.rect(0, 0, doc.page.width, 50)
-       .fill('#1E2A4A');  // Azul escuro no topo da página
+       .fill('#222f51');  // Azul escuro no topo da página
     
     // Texto do cabeçalho
     doc.fillColor('white')
@@ -202,7 +202,7 @@ export class PdfService {
     // Configurar cabeçalho para as próximas páginas
     doc.on('pageAdded', () => {
       doc.rect(0, 0, doc.page.width, 50)
-         .fill('#1E2A4A');
+         .fill('#222f51A');
       doc.fillColor('white')
          .fontSize(14)
          .font('Helvetica-Bold')
@@ -212,7 +212,7 @@ export class PdfService {
     // Título principal 'Seu resultado' centralizado - com espaço adequado do cabeçalho
     doc.fontSize(28)
        .font('Helvetica-Bold')
-       .fillColor('#334A7C')  // Azul mais claro
+       .fillColor('#40528d')  // Azul mais claro
        .text('Seu resultado', 40, 100, { width: doc.page.width - 80, align: 'center' })
        .moveDown(1);
        
@@ -237,20 +237,20 @@ export class PdfService {
     const fullWidth = doc.page.width - 80; // 40px de margem de cada lado
     
     // Seção de Inteligência Artificial
-    doc.fontSize(38)
-       .fillColor('#333333')
+    doc.fontSize(12)
+       .fillColor('#808080')
        .font('Helvetica-Bold')
        .text('NÍVEL DE MATURIDADE EM INTELIGÊNCIA ARTIFICIAL', 40, doc.y + 10, { width: fullWidth, align: 'center' });
     
     // Nome do nível IA
-    doc.fontSize(18)
+    doc.fontSize(14)
        .fillColor('#000000')
        .font('Helvetica-Bold')
        .text(iaLevel, 40, doc.y + 10, { width: fullWidth, align: 'center' });
     
     // Descrição do nível IA
-    doc.fontSize(10)
-       .fillColor('#666666')
+    doc.fontSize(8)
+       .fillColor('#808080')
        .font('Helvetica')
        .text(iaDescription, 40, doc.y + 5, { width: fullWidth, align: 'center' })
        .moveDown(0.5);
@@ -264,20 +264,20 @@ export class PdfService {
     doc.y += chartDisplaySize * 0.85 + 40;
     
     // Seção de Cultura
-    doc.fontSize(14)
-       .fillColor('#333333')
+    doc.fontSize(12)
+       .fillColor('#808080')
        .font('Helvetica-Bold')
        .text('GRAU DE ALINHAMENTO CULTURAL COM INOVAÇÃO', 40, doc.y, { width: fullWidth, align: 'center' });
     
     // Nome do nível Cultura
-    doc.fontSize(18)
+    doc.fontSize(14)
        .fillColor('#000000')
        .font('Helvetica-Bold')
        .text(culturaLevel, 40, doc.y + 10, { width: fullWidth, align: 'center' });
     
     // Descrição do nível Cultura
-    doc.fontSize(10)
-       .fillColor('#666666')
+    doc.fontSize(8)
+       .fillColor('#808080')
        .font('Helvetica')
        .text(culturaDescription, 40, doc.y + 5, { width: fullWidth, align: 'center' })
        .moveDown(0.5);
@@ -296,9 +296,9 @@ export class PdfService {
     doc.moveDown(3);
     
     // Adicionar seção 'O que isso significa para sua empresa?'
-    doc.fontSize(18)
+    doc.fontSize(14)
        .font('Helvetica-Bold')
-       .fillColor('#334A7C')
+       .fillColor('#000000')
        .text('O que isso significa para sua empresa?', 60, doc.y, { width: doc.page.width - 120, align: 'left' })
        .moveDown(1);
        
@@ -317,9 +317,9 @@ export class PdfService {
     
     // Adicionar cada item da lista com bullet point
     companyMeaning.forEach(point => {
-      doc.fontSize(12)
+      doc.fontSize(10)
          .font('Helvetica')
-         .fillColor('#333333')
+         .fillColor('#808080')
          .text('•', 60, doc.y, { continued: true })
          .text(' ' + point, { width: doc.page.width - 140, align: 'left' })
          .moveDown(1);
@@ -329,15 +329,15 @@ export class PdfService {
     doc.addPage();
     
     // Adicionar cabeçalho "RECOMENDAÇÕES SINGULARI"
-    doc.fontSize(22)
+    doc.fontSize(14)
       .font('Helvetica-Bold')
-      .fillColor('#3F51B5') // Cor azul escuro
+      .fillColor('#808080') // Cor cinza  
       .text('RECOMENDAÇÕES', 60, doc.y + 20)
       .moveDown(0.2);
     
     doc.fontSize(30)
       .font('Helvetica-Bold')
-      .fillColor('#3F51B5') // Cor azul escuro
+      .fillColor('#40528d') // Cor azul escuro
       .text('SINGULARI', 60, doc.y)
       .moveDown(1.5);
     
@@ -347,19 +347,19 @@ export class PdfService {
     // Coluna esquerda - Nível de IA
     doc.fontSize(10)
       .font('Helvetica')
-      .fillColor('#666666')
+      .fillColor('#808080')
       .text('NÍVEL DE MATURIDADE EM', 60, doc.y, { width: halfWidth, align: 'left' })
       .moveDown(0.1);
     
     doc.fontSize(10)
       .font('Helvetica')
-      .fillColor('#666666')
+      .fillColor('#808080')
       .text('INTELIGÊNCIA ARTIFICIAL', 60, doc.y, { width: halfWidth, align: 'left' })
       .moveDown(0.3);
     
     doc.fontSize(16)
       .font('Helvetica-Bold')
-      .fillColor('#334A7C')
+      .fillColor('#40528d') // azul escuro 
       .text(iaLevel, 60, doc.y, { width: halfWidth, align: 'left' })
       .moveDown(0.5);
     
@@ -381,7 +381,7 @@ export class PdfService {
     
     doc.fontSize(16)
       .font('Helvetica-Bold')
-      .fillColor('#334A7C')
+      .fillColor('#40528d') // azul escuro
       .text(culturaLevel, pageWidth / 2, startY - 15, { width: halfWidth, align: 'left' });
     
     // Reiniciar posição y após as duas colunas
