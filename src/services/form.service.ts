@@ -292,22 +292,22 @@ export class FormService {
                 'Tradicional': [
                     'Processos tradicionais que garantem estabilidade.',
                     'Estrutura organizacional que mantém consistência.',
-                    'Conservação dos métodos já testados.'
+                    'Conservação dos métodos já testados, que podem ser úteis como base para mudanças graduais.'
                 ],
                 'Exploradora': [
-                    'Iniciativas inovadoras em andamento.',
-                    'Disposição para experimentar novas tecnologias.',
-                    'Projetos piloto bem estruturados.'
+                    'Iniciativas iniciais de IA já foram testadas, demonstrando potencial.',
+                    'Interesse em adotar novas tecnologias.',
+                    'Capacidade de identificar oportunidades, mesmo que em estágio embrionário.'
                 ],
                 'Inovadora': [
-                    'Uso estruturado de IA em processos-chave.',
-                    'Resultados mensuráveis e consistentes.',
-                    'Integração tecnológica avançada.'
+                    'Uso estruturado de IA com resultados consistentes.',
+                    'Projetos de inovação em andamento com impacto mensurado.',
+                    'Integração tecnológica avançada em áreas-chave.'
                 ],
                 'Visionária': [
                     'Estratégia de IA alinhada com objetivos de negócio.',
-                    'Investimentos significativos em tecnologia.',
-                    'Visão de longo prazo para inovação.'
+                    'Investimentos significativos em tecnologia e inovação.',
+                    'Visão de longo prazo que posiciona a empresa como referência.'
                 ]
             },
             'cultura': {
@@ -317,19 +317,19 @@ export class FormService {
                     'Conhecimento profundo do negócio.'
                 ],
                 'Moderadamente Aberta': [
-                    'Disposição para mudanças graduais.',
-                    'Comunicação interna estabelecida.',
-                    'Equipes com potencial de adaptação.'
+                    'Alguma abertura para mudanças e experimentação.',
+                    'Interesse em inovação, mesmo que ainda incipiente.',
+                    'Capacidade de adaptação em momentos pontuais, demonstrando potencial de evolução.'
                 ],
                 'Favorável': [
-                    'Cultura que valoriza a inovação.',
-                    'Colaboração entre áreas.',
-                    'Abertura a novas ideias.'
+                    'Cultura interna que já valoriza a inovação e o aprendizado.',
+                    'Colaboradores abertos a novas ideias.',
+                    'Existência de um ambiente que incentiva o diálogo e a troca de experiências.'
                 ],
                 'Altamente Alinhada': [
-                    'Cultura de inovação consolidada.',
-                    'Liderança engajada com transformação.',
-                    'Processos adaptáveis e flexíveis.'
+                    'Cultura extremamente receptiva e aberta à inovação.',
+                    'Forte engajamento dos colaboradores e liderança motivada.',
+                    'Alta capacidade de adaptação quando os projetos são bem direcionados.'
                 ]
             }
         };
@@ -341,46 +341,46 @@ export class FormService {
         const weaknesses: { [key: string]: { [key: string]: string[] } } = {
             'ia': {
                 'Tradicional': [
-                    'Uso limitado de tecnologias inovadoras.',
-                    'Processos podem estar desatualizados.',
-                    'Possível resistência a mudanças.'
+                    'Necessidade urgente de abrir espaço para novas tecnologias.',
+                    'Baixo investimento em inovação e atualização tecnológica.',
+                    'Uso limitado de tecnologias inovadoras.'
                 ],
                 'Exploradora': [
-                    'Falta de integração entre projetos.',
-                    'Resultados ainda não consolidados.',
-                    'Necessidade de maior estruturação.'
+                    'Falta de escalabilidade e formalização dos processos de inovação.',
+                    'Necessidade de integração maior entre IA e processos internos.',
+                    'Resultados ainda não consolidados e difíceis de mensurar.'
                 ],
                 'Inovadora': [
-                    'Possível complexidade excessiva.',
-                    'Desafios de escalabilidade.',
-                    'Necessidade de otimização contínua.'
+                    'Necessidade de expandir para mais áreas e intensificar a transformação.',
+                    'Desafios de escalabilidade para toda a organização.',
+                    'Necessidade de otimização contínua dos processos de IA.'
                 ],
                 'Visionária': [
-                    'Alto investimento requerido.',
-                    'Complexidade na gestão de mudanças.',
-                    'Necessidade de constante atualização.'
+                    'Manter a agilidade e a adaptabilidade mesmo com a estrutura consolidada.',
+                    'Riscos de complacência devido ao sucesso atual.',
+                    'Complexidade na gestão de mudanças e atualização constante.'
                 ]
             },
             'cultura': {
                 'Alta Resistência': [
-                    'Resistência a mudanças.',
-                    'Comunicação limitada sobre inovação.',
-                    'Processos muito rígidos.'
+                    'Forte resistência cultural que dificulta a adoção de mudanças.',
+                    'Comunicação limitada sobre inovação e seus benefícios.',
+                    'Processos muito rígidos que dificultam experimentação.'
                 ],
                 'Moderadamente Aberta': [
-                    'Mudanças ainda graduais.',
-                    'Necessidade de maior engajamento.',
-                    'Processos em transição.'
+                    'Necessidade de maior engajamento e participação dos colaboradores.',
+                    'Falta de indicadores claros para medir o sucesso dos projetos.',
+                    'Processos em transição que precisam ser formalizados.'
                 ],
                 'Favorável': [
-                    'Possível falta de estruturação.',
-                    'Necessidade de maior integração.',
-                    'Desafios de escalabilidade cultural.'
+                    'Potencial cultural não totalmente explorado na prática.',
+                    'Necessidade de maior integração entre diferentes departamentos.',
+                    'Desafios de escalabilidade cultural para toda a organização.'
                 ],
                 'Altamente Alinhada': [
-                    'Possível complexidade excessiva.',
-                    'Necessidade de manutenção contínua.',
-                    'Desafios de gestão de expectativas.'
+                    'Necessidade de alinhar a predisposição cultural com resultados concretos.',
+                    'Manutenção do ritmo acelerado de inovação e adaptação.',
+                    'Desafios de gestão de expectativas e sustentabilidade das mudanças.'
                 ]
             }
         };
@@ -392,46 +392,46 @@ export class FormService {
         const recommendations: { [key: string]: { [key: string]: string[] } } = {
             'ia': {
                 'Tradicional': [
-                    'Iniciar capacitações em tecnologias emergentes.',
-                    'Desenvolver projetos piloto de baixo risco.',
-                    'Criar um roadmap gradual de transformação digital.'
+                    'Capacitação e Sensibilização: Inicie programas de treinamento e workshops para demonstrar os benefícios da IA.',
+                    'Projetos Piloto: Comece com iniciativas de baixo risco para gerar resultados e construir confiança.',
+                    'Mapeamento de Oportunidades: Identifique áreas prioritárias onde a IA pode ter maior impacto.'
                 ],
                 'Exploradora': [
-                    'Estruturar os projetos existentes.',
-                    'Desenvolver métricas de sucesso.',
-                    'Criar processos de governança.'
+                    'Planejamento Estratégico: Desenvolva um roadmap que una os projetos de IA com os objetivos de negócio.',
+                    'Capacitação Contínua: Invista em treinamentos regulares e na disseminação de boas práticas.',
+                    'Estabelecimento de KPIs: Defina indicadores-chave para monitorar a eficácia das iniciativas.'
                 ],
                 'Inovadora': [
-                    'Otimizar processos existentes.',
-                    'Expandir para novas áreas.',
-                    'Desenvolver capacidades avançadas.'
+                    'Consolidação de Processos: Estruture a governança da inovação para ampliar e padronizar os projetos.',
+                    'Expansão para Novas Áreas: Identifique oportunidades de aplicar IA em setores ainda não explorados.',
+                    'Otimização de Processos: Fortaleça a governança e a integração entre áreas para ampliar os resultados.'
                 ],
                 'Visionária': [
-                    'Manter liderança tecnológica.',
-                    'Explorar novas fronteiras.',
-                    'Desenvolver parcerias estratégicas.'
+                    'Inovação Preditiva: Invista em P&D para antecipar tendências e explorar tecnologias disruptivas.',
+                    'Liderança de Mercado: Posicione a empresa como referência em inovação no seu segmento.',
+                    'Fomento à Pesquisa Interna: Incentive a criação de grupos de pesquisa para explorar novas oportunidades.'
                 ]
             },
             'cultura': {
                 'Alta Resistência': [
-                    'Implementar programas de sensibilização.',
-                    'Desenvolver lideranças para mudança.',
-                    'Criar canais de comunicação eficientes.'
+                    'Campanhas de Sensibilização: Realize sessões informativas para reduzir barreiras culturais.',
+                    'Apoio da Liderança: Envolva líderes para atuarem como agentes de mudança.',
+                    'Comunicação Interna: Estabeleça canais que promovam a troca de ideias e uma cultura de experimentação.'
                 ],
                 'Moderadamente Aberta': [
-                    'Ampliar programas de capacitação.',
-                    'Fortalecer a comunicação interna.',
-                    'Desenvolver indicadores de mudança.'
+                    'Iniciativas de Engajamento: Crie fóruns interdepartamentais para estimular a troca de experiências.',
+                    'Feedback Contínuo: Utilize os resultados dos projetos para ajustar estratégias e incentivar o engajamento.',
+                    'Fortalecer a Comunicação: Amplie a divulgação interna de resultados e benefícios das iniciativas inovadoras.'
                 ],
                 'Favorável': [
-                    'Estruturar processos de inovação.',
-                    'Fortalecer a integração entre áreas.',
-                    'Desenvolver programas de reconhecimento.'
+                    'Formalização de Projetos: Estruture processos para transformar ideias em projetos concretos.',
+                    'Integração Sistêmica: Promova a conexão entre diferentes áreas para otimizar o uso da tecnologia.',
+                    'Programas de Reconhecimento: Crie incentivos para reconhecer colaboradores inovadores.'
                 ],
                 'Altamente Alinhada': [
-                    'Manter a cultura de inovação.',
-                    'Desenvolver novas práticas.',
-                    'Criar programas de sustentabilidade.'
+                    'Agilidade Organizacional: Desenvolva processos que garantam rápida adaptação às mudanças, mantendo a cultura inovadora.',
+                    'Benchmarking: Compare os resultados com as melhores práticas e ajuste as estratégias.',
+                    'Estratégia de Sustentabilidade: Desenvolva iniciativas que garantam a continuidade e evolução dos projetos.'
                 ]
             }
         };
