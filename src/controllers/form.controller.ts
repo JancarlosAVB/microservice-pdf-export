@@ -44,27 +44,6 @@ export class FormController {
                 culturaScore = Number(formData.numeric_field_2);
             }
 
-            // Se temos os valores reais no formData, vamos extrair e substituir os datasets
-            if (iaScore && iaScore > 10) {
-                console.log('Atualizando dataset de IA com valor correto:', iaScore);
-                
-                // Distribuir o score total entre os 10 itens
-                if (iaChartData && iaChartData.datasets && iaChartData.datasets.length > 0) {
-                    const meanValue = iaScore / 10;
-                    iaChartData.datasets[0].data = Array(10).fill(meanValue);
-                }
-            }
-            
-            if (culturaScore && culturaScore > 10) {
-                console.log('Atualizando dataset de Cultura com valor correto:', culturaScore);
-                
-                // Distribuir o score total entre os 10 itens
-                if (culturaChartData && culturaChartData.datasets && culturaChartData.datasets.length > 0) {
-                    const meanValue = culturaScore / 10;
-                    culturaChartData.datasets[0].data = Array(10).fill(meanValue);
-                }
-            }
-
             // Recalcular níveis se necessário
             if (iaScore && !iaLevel) {
                 iaLevel = this.getIALevel(iaScore);
