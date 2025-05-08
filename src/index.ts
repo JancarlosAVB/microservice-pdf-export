@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config';
 import chartRoutes from './routes/chart.routes';
+import formRoutes from './routes/form.routes';
 import { errorHandler, notFoundHandler } from './utils/error-handler';
 
 // Inicializar o aplicativo Express
@@ -26,7 +27,8 @@ app.get('/health', (req, res) => {
 });
 
 // Rotas do microserviço
-app.use('/api', chartRoutes);
+app.use('/api/charts', chartRoutes);
+app.use('/api/forms', formRoutes);
 
 // Middleware para rotas não encontradas
 app.use(notFoundHandler);
