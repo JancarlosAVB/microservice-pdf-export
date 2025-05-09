@@ -672,56 +672,10 @@ export class PdfService {
       .font(this.getFontBold())
       .fillColor(this.colors.primary) // Cor primária (azul escuro)
       .text('SINGULARI', leftMargin, doc.y)
-      .moveDown(0.5); // Reduzindo o espaço antes dos níveis
+      .moveDown(1.5); // Aumentando o espaço antes das seções de recomendações
     
-    // Adicionar informações de nível - duas colunas
-    const halfWidth = (pageWidth - (margin * 2)) / 2;
-    
-    // Coluna esquerda - Nível de IA
-    doc.fontSize(10)
-      .font(this.getFontBold())
-      .fillColor(this.colors.secondary)
-      .text('NÍVEL DE MATURIDADE EM', leftMargin, doc.y, { width: halfWidth, align: 'left' })
-      .moveDown(0.1);
-    
-    doc.fontSize(10)
-      .font(this.getFontBold())
-      .fillColor(this.colors.secondary)
-      .text('INTELIGÊNCIA ARTIFICIAL', leftMargin, doc.y, { width: halfWidth, align: 'left' })
-      .moveDown(0.3);
-    
-    // Salvar posição para alinhar os textos de níveis
-    const leftTitleY = doc.y;
-    
-    doc.fontSize(16)
-      .font(this.getFontBold())
-      .fillColor(this.colors.primary)
-      .text(iaLevel, leftMargin, doc.y, { width: halfWidth, align: 'left' })
-      .moveDown(0.5);
-    
-    // Salvar a posição y para alinhar as seções abaixo
-    const startY = doc.y;
-    
-    // Coluna direita - Nível de Cultura
-    doc.fontSize(10)
-      .font(this.getFontBold())
-      .fillColor(this.colors.secondary)
-      .text('GRAU DE ALINHAMENTO CULTURAL', pageWidth / 2, leftTitleY - 27, { width: halfWidth, align: 'left' })
-      .moveDown(0.1);
-    
-    doc.fontSize(10)
-      .font(this.getFontBold())
-      .fillColor(this.colors.secondary)
-      .text('COM INOVAÇÃO', pageWidth / 2, leftTitleY - 14, { width: halfWidth, align: 'left' })
-      .moveDown(0.3);
-    
-    doc.fontSize(16)
-      .font(this.getFontBold())
-      .fillColor(this.colors.primary)
-      .text(culturaLevel, pageWidth / 2, leftTitleY, { width: halfWidth, align: 'left' });
-    
-    // Reiniciar posição y após as duas colunas
-    doc.y = startY + 25;
+    // Remover a parte de informações de nível em duas colunas
+    // Agora passamos diretamente para as recomendações
     
     // Usar recomendações da opção ou da análise combinada
     const recommendations = mergedOptions.recommendations || analysis.recommendations;
