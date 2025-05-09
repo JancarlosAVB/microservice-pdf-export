@@ -57,7 +57,18 @@ export class PdfService {
       ? baseDir 
       : path.join(baseDir, 'microservice-pdf-export');
     
-    this.assetsPath = path.join(microserviceDir, 'assets');
+    // Tentar encontrar os assets em diferentes caminhos possíveis
+    const possibleAssetsPaths = [
+      path.join(microserviceDir, 'assets'),                // caminho padrão
+      path.join(microserviceDir, 'dist', 'assets'),        // caminho quando compilado
+      path.join(process.cwd(), 'assets'),                  // relativo ao diretório atual
+      path.join(process.cwd(), 'dist', 'assets'),          // relativo ao diretório atual, compilado
+      path.join(__dirname, '..', '..', 'assets'),          // dois níveis acima do arquivo atual
+      path.join(__dirname, '..', 'assets'),                // um nível acima do arquivo atual
+    ];
+    
+    // Encontrar o primeiro caminho de assets válido
+    this.assetsPath = possibleAssetsPaths.find(p => fs.existsSync(p)) || possibleAssetsPaths[0];
     
     // Para debugging
     console.log(`Usando caminho de assets: ${this.assetsPath}`);
