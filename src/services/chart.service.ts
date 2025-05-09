@@ -120,9 +120,27 @@ export class ChartService {
               },
               color: '#000000',
               padding: 6,
-              // Limitar tamanho dos rótulos para manter proporções idênticas
+              // Melhorar apresentação de rótulos longos usando quebra de linha
               callback: function(value: string) {
-                return value.length > 12 ? value.substring(0, 12) + '...' : value;
+                // Se o texto tiver mais de 15 caracteres, tentar quebrar em duas linhas
+                if (value.length > 15) {
+                  // Tentar encontrar um espaço para quebrar
+                  const middleIndex = Math.ceil(value.length / 2);
+                  let breakIndex = value.lastIndexOf(' ', middleIndex);
+                  
+                  // Se não encontrar espaço, quebrar no meio mesmo
+                  if (breakIndex === -1) {
+                    breakIndex = middleIndex;
+                  }
+                  
+                  const firstLine = value.substring(0, breakIndex);
+                  const secondLine = value.substring(breakIndex === middleIndex ? breakIndex : breakIndex + 1);
+                  
+                  return [firstLine, secondLine];
+                }
+                
+                // Se for curto, retornar o texto original
+                return value;
               }
             }
           }
