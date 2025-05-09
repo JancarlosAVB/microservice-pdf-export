@@ -669,7 +669,7 @@ export class PdfService {
       .font(this.getFontBold())
       .fillColor(this.colors.primary) // Cor primária (azul escuro)
       .text('SINGULARI', leftMargin, doc.y)
-      .moveDown(1.5); // Aumentando o espaço antes das seções de recomendações
+      .moveDown(0.8); // Reduzido de 1.5 para 0.8 para diminuir o espaço entre SINGULARI e PONTOS FORTES
     
     // Remover a parte de informações de nível em duas colunas
     // Agora passamos diretamente para as recomendações
@@ -687,8 +687,8 @@ export class PdfService {
       }
       
       // Coordenadas para o ícone - alinhado à margem esquerda
-      // Reduzir margem para começar mais à esquerda
-      const iconX = leftMargin - 10; // Reduzindo 10 pixels 
+      // Restaurar para leftMargin original (sem redução)
+      const iconX = leftMargin;
       const iconY = doc.y + 10;
       const iconSize = 20;
       const bgSize = iconSize + 10;
@@ -702,7 +702,7 @@ export class PdfService {
       doc.fontSize(14)
         .font(this.getFontBold())
         .fillColor(this.colors.primary) // Mudando para cor primária (azul)
-        .text('PONTOS FORTES', iconX + bgSize + iconTextGap, doc.y)
+        .text('PONTOS FORTES', leftMargin + bgSize + iconTextGap, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
@@ -754,13 +754,14 @@ export class PdfService {
                .font(this.getFontRegular())
                .text(' | Relatório Completo', { align: 'left' });
             
-            doc.moveDown(2);
+            // Aumentar o espaço entre o cabeçalho e o conteúdo
+            doc.moveDown(4); // Aumentado de 2 para 4 para ter mais espaço após o cabeçalho
           } else {
             doc.moveDown(3);
           }
           
           // Adicionar título "PONTOS FORTES (continuação)" na nova página
-          const iconX = leftMargin - 10; // Reduzindo 10 pixels também na continuação
+          const iconX = leftMargin; // Restaurar para leftMargin original
           const iconY = doc.y + 10;
           
           // Adicionar ícone de escudo novamente
@@ -770,7 +771,7 @@ export class PdfService {
           doc.fontSize(14)
             .font(this.getFontBold())
             .fillColor(this.colors.primary)
-            .text('PONTOS FORTES (continuação)', iconX + bgSize + iconTextGap, doc.y)
+            .text('PONTOS FORTES (continuação)', leftMargin + bgSize + iconTextGap, doc.y)
             .moveDown(0.5);
           
           // Restaurar a formatação após o título na nova página
@@ -779,10 +780,10 @@ export class PdfService {
              .fillColor(this.colors.secondary);
         }
         
-        doc.text('•', iconX + bgSize + iconTextGap, doc.y, { continued: true })
+        doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
            .text(' ' + ponto, { 
              align: 'left',
-             width: pageWidth - (iconX + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
+             width: pageWidth - (leftMargin + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
            })
            .moveDown(0.5);
       });
@@ -801,7 +802,7 @@ export class PdfService {
       }
       
       // Coordenadas para o ícone - alinhado à margem esquerda
-      const iconX = leftMargin - 10; // Reduzindo 10 pixels
+      const iconX = leftMargin; // Restaurar para leftMargin original
       const iconY = doc.y + 10;
       const iconSize = 20;
       const bgSize = iconSize + 10;
@@ -815,7 +816,7 @@ export class PdfService {
       doc.fontSize(14)
         .font(this.getFontBold())
         .fillColor(this.colors.primary) // Mudando para cor primária (azul)
-        .text('ÁREAS DE MELHORIA', iconX + bgSize + iconTextGap, doc.y)
+        .text('ÁREAS DE MELHORIA', leftMargin + bgSize + iconTextGap, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
@@ -867,13 +868,14 @@ export class PdfService {
                .font(this.getFontRegular())
                .text(' | Relatório Completo', { align: 'left' });
             
-            doc.moveDown(2);
+            // Aumentar o espaço entre o cabeçalho e o conteúdo
+            doc.moveDown(4); // Aumentado de 2 para 4 para ter mais espaço após o cabeçalho
           } else {
             doc.moveDown(3);
           }
           
           // Adicionar título "ÁREAS DE MELHORIA (continuação)" na nova página
-          const iconX = leftMargin - 10; // Reduzindo 10 pixels também na continuação
+          const iconX = leftMargin; // Restaurar para leftMargin original
           const iconY = doc.y + 10;
           
           // Adicionar ícone de alvo novamente
@@ -883,7 +885,7 @@ export class PdfService {
           doc.fontSize(14)
             .font(this.getFontBold())
             .fillColor(this.colors.primary)
-            .text('ÁREAS DE MELHORIA (continuação)', iconX + bgSize + iconTextGap, doc.y)
+            .text('ÁREAS DE MELHORIA (continuação)', leftMargin + bgSize + iconTextGap, doc.y)
             .moveDown(0.5);
           
           // Restaurar a formatação após o título na nova página
@@ -892,10 +894,10 @@ export class PdfService {
              .fillColor(this.colors.secondary);
         }
         
-        doc.text('•', iconX + bgSize + iconTextGap, doc.y, { continued: true })
+        doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
            .text(' ' + area, { 
              align: 'left',
-             width: pageWidth - (iconX + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
+             width: pageWidth - (leftMargin + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
            })
            .moveDown(0.5);
       });
@@ -914,7 +916,7 @@ export class PdfService {
       }
       
       // Coordenadas para o ícone - alinhado à margem esquerda
-      const iconX = leftMargin - 10; // Reduzindo 10 pixels
+      const iconX = leftMargin; // Restaurar para leftMargin original
       const iconY = doc.y + 10;
       const iconSize = 20;
       const bgSize = iconSize + 10;
@@ -928,7 +930,7 @@ export class PdfService {
       doc.fontSize(14)
         .font(this.getFontBold())
         .fillColor(this.colors.primary) // Mudando para cor primária (azul)
-        .text('RECOMENDAÇÕES', iconX + bgSize + iconTextGap, doc.y)
+        .text('RECOMENDAÇÕES', leftMargin + bgSize + iconTextGap, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
@@ -980,13 +982,14 @@ export class PdfService {
                .font(this.getFontRegular())
                .text(' | Relatório Completo', { align: 'left' });
             
-            doc.moveDown(2);
+            // Aumentar o espaço entre o cabeçalho e o conteúdo
+            doc.moveDown(4); // Aumentado de 2 para 4 para ter mais espaço após o cabeçalho
           } else {
             doc.moveDown(3);
           }
           
           // Adicionar título "RECOMENDAÇÕES (continuação)" na nova página
-          const iconX = leftMargin - 10; // Reduzindo 10 pixels também na continuação
+          const iconX = leftMargin; // Restaurar para leftMargin original
           const iconY = doc.y + 10;
           
           // Adicionar ícone de foguete novamente
@@ -996,7 +999,7 @@ export class PdfService {
           doc.fontSize(14)
             .font(this.getFontBold())
             .fillColor(this.colors.primary) // Mesma cor primária (azul)
-            .text('RECOMENDAÇÕES (continuação)', iconX + bgSize + iconTextGap, doc.y)
+            .text('RECOMENDAÇÕES (continuação)', leftMargin + bgSize + iconTextGap, doc.y)
             .moveDown(0.5);
           
           // Restaurar a formatação após o título na nova página
@@ -1005,10 +1008,10 @@ export class PdfService {
              .fillColor(this.colors.secondary);
         }
         
-        doc.text('•', iconX + bgSize + iconTextGap, doc.y, { continued: true })
+        doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
            .text(' ' + recomendacao, { 
              align: 'left',
-             width: pageWidth - (iconX + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
+             width: pageWidth - (leftMargin + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
            })
            .moveDown(0.5);
       });
