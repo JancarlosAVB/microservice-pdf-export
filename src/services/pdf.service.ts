@@ -718,7 +718,7 @@ export class PdfService {
     // ========== SEÇÃO: PONTOS FORTES ==========
     if (recommendations?.pontosFortes && recommendations.pontosFortes.length > 0) {
       // Verificar se há espaço suficiente para o próximo item
-      const estimatedItemHeight = 20; // Altura estimada para cada item
+      const estimatedItemHeight = 100; // Altura estimada aumentada para garantir espaço para título e pelo menos um item
       if (doc.y + estimatedItemHeight > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
         doc.moveDown(3);
@@ -748,13 +748,17 @@ export class PdfService {
         .fillColor(this.colors.secondary);
       
       recommendations.pontosFortes.forEach((ponto: string, index: number) => {
-        // Verificar se há espaço suficiente para o próximo item
-        const estimatedItemHeight = 20; // Altura estimada para cada item
+        // Verificar se há espaço suficiente para o próximo item - estimativa mais precisa
+        const linhasEstimadas = Math.ceil(ponto.length / 70); // Estimativa de quantas linhas o texto ocupará
+        const estimatedItemHeight = 20 * linhasEstimadas; // 20 pixels por linha estimada
+        
         if (doc.y + estimatedItemHeight > doc.page.height - doc.page.margins.bottom) {
           doc.addPage();
           doc.moveDown(3);
-          // Redefinir a cor após adicionar nova página
-          doc.fillColor(this.colors.secondary);
+          // Restaurar a formatação após a nova página
+          doc.fontSize(12)
+             .font(this.getFontRegular())
+             .fillColor(this.colors.secondary);
         }
         
         doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
@@ -772,12 +776,10 @@ export class PdfService {
     // ========== SEÇÃO: ÁREAS DE MELHORIA ==========
     if (recommendations?.areasMelhoria && recommendations.areasMelhoria.length > 0) {
       // Verificar se há espaço suficiente para o título e pelo menos um item
-      const minimumSectionHeight = 50; // Altura mínima para título e um item
+      const minimumSectionHeight = 100; // Altura mínima aumentada para garantir espaço para título e pelo menos um item
       if (doc.y + minimumSectionHeight > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
         doc.moveDown(3);
-        // Redefinir a cor após adicionar nova página
-        doc.fillColor(this.colors.secondary);
       }
       
       // Coordenadas para o ícone - alinhado à margem esquerda
@@ -804,13 +806,17 @@ export class PdfService {
         .fillColor(this.colors.secondary);
       
       recommendations.areasMelhoria.forEach((area: string) => {
-        // Verificar se há espaço suficiente para o próximo item
-        const estimatedItemHeight = 20; // Altura estimada para cada item
+        // Verificar se há espaço suficiente para o próximo item - estimativa mais precisa
+        const linhasEstimadas = Math.ceil(area.length / 70); // Estimativa de quantas linhas o texto ocupará
+        const estimatedItemHeight = 20 * linhasEstimadas; // 20 pixels por linha estimada
+        
         if (doc.y + estimatedItemHeight > doc.page.height - doc.page.margins.bottom) {
           doc.addPage();
           doc.moveDown(3);
-          // Redefinir a cor após adicionar nova página
-          doc.fillColor(this.colors.secondary);
+          // Restaurar a formatação após a nova página
+          doc.fontSize(12)
+             .font(this.getFontRegular())
+             .fillColor(this.colors.secondary);
         }
         
         doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
@@ -828,12 +834,10 @@ export class PdfService {
     // ========== SEÇÃO: RECOMENDAÇÕES ==========
     if (recommendations?.recomendacoes && recommendations.recomendacoes.length > 0) {
       // Verificar se há espaço suficiente para o título e pelo menos um item
-      const minimumSectionHeight = 50; // Altura mínima para título e um item
+      const minimumSectionHeight = 100; // Altura mínima aumentada para garantir espaço para título e pelo menos um item
       if (doc.y + minimumSectionHeight > doc.page.height - doc.page.margins.bottom) {
         doc.addPage();
         doc.moveDown(3);
-        // Redefinir a cor após adicionar nova página
-        doc.fillColor(this.colors.secondary);
       }
       
       // Coordenadas para o ícone - alinhado à margem esquerda
@@ -860,13 +864,17 @@ export class PdfService {
         .fillColor(this.colors.secondary);
       
       recommendations.recomendacoes.forEach((recomendacao: string) => {
-        // Verificar se há espaço suficiente para o próximo item
-        const estimatedItemHeight = 20; // Altura estimada para cada item
+        // Verificar se há espaço suficiente para o próximo item - estimativa mais precisa
+        const linhasEstimadas = Math.ceil(recomendacao.length / 70); // Estimativa de quantas linhas o texto ocupará
+        const estimatedItemHeight = 20 * linhasEstimadas; // 20 pixels por linha estimada
+        
         if (doc.y + estimatedItemHeight > doc.page.height - doc.page.margins.bottom) {
           doc.addPage();
           doc.moveDown(3);
-          // Redefinir a cor após adicionar nova página
-          doc.fillColor(this.colors.secondary);
+          // Restaurar a formatação após a nova página
+          doc.fontSize(12)
+             .font(this.getFontRegular())
+             .fillColor(this.colors.secondary);
         }
         
         doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
