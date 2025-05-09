@@ -49,8 +49,18 @@ export class PdfService {
 
   constructor() {
     this.chartService = new ChartService();
+    
     // Caminho para os assets (imagens, fontes, etc.)
-    this.assetsPath = path.join(process.cwd(), 'assets');
+    // Identificar o diretório base da aplicação (microservice-pdf-export)
+    const baseDir = path.resolve(process.cwd()); // Diretório atual
+    const microserviceDir = baseDir.includes('microservice-pdf-export') 
+      ? baseDir 
+      : path.join(baseDir, 'microservice-pdf-export');
+    
+    this.assetsPath = path.join(microserviceDir, 'assets');
+    
+    // Para debugging
+    console.log(`Usando caminho de assets: ${this.assetsPath}`);
     
     // Definir caminhos das fontes
     this.fontRegular = path.join(this.assetsPath, 'fonts', 'Asap-Regular.ttf');
@@ -68,17 +78,23 @@ export class PdfService {
    * @param doc Documento PDF
    */
   private registerFonts(doc: any): void {
-    // Verificar se os arquivos de fonte existem
-    if (fs.existsSync(this.fontRegular)) {
-      doc.registerFont('AsapRegular', this.fontRegular);
-    } else {
-      console.warn('Fonte Asap Regular não encontrada. Usando Helvetica como fallback.');
-    }
-    
-    if (fs.existsSync(this.fontBold)) {
-      doc.registerFont('AsapBold', this.fontBold);
-    } else {
-      console.warn('Fonte Asap Bold não encontrada. Usando Helvetica-Bold como fallback.');
+    try {
+      // Verificar se os arquivos de fonte existem
+      if (fs.existsSync(this.fontRegular)) {
+        doc.registerFont('AsapRegular', this.fontRegular);
+        console.log('Fonte Asap Regular registrada com sucesso');
+      } else {
+        console.warn(`Fonte Asap Regular não encontrada em: ${this.fontRegular}`);
+      }
+      
+      if (fs.existsSync(this.fontBold)) {
+        doc.registerFont('AsapBold', this.fontBold);
+        console.log('Fonte Asap Bold registrada com sucesso');
+      } else {
+        console.warn(`Fonte Asap Bold não encontrada em: ${this.fontBold}`);
+      }
+    } catch (error) {
+      console.error('Erro ao registrar fontes:', error);
     }
   }
 
@@ -94,6 +110,167 @@ export class PdfService {
    */
   private getFontBold(): string {
     return fs.existsSync(this.fontBold) ? 'AsapBold' : 'Helvetica-Bold';
+  }
+
+  /**
+   * Desenha um ícone SVG do arquivo
+   * @param doc Documento PDF
+   * @param iconName Nome do arquivo SVG (sem extensão)
+   * @param x Posição X
+   * @param y Posição Y
+   * @param size Tamanho do ícone
+   */
+  private drawSvgIcon(doc: any, iconName: string, x: number, y: number, size: number = 20): void {
+    try {
+      // Verificar se o arquivo SVG existe
+      const iconPath = path.join(this.assetsPath, 'icons', `${iconName}.svg`);
+      
+      if (fs.existsSync(iconPath)) {
+        console.log(`SVG encontrado: ${iconName}.svg`);
+        
+        // Ler o conteúdo do SVG
+        const svgContent = fs.readFileSync(iconPath, 'utf8');
+        
+        // Extrair valores do viewBox para dimensionar corretamente
+        let viewBox = [0, 0, 24, 24]; // Valor padrão de viewBox
+        const viewBoxMatch = svgContent.match(/viewBox=["']([^"']*)["']/i);
+        
+        if (viewBoxMatch && viewBoxMatch[1]) {
+          viewBox = viewBoxMatch[1].split(/\s+/).map(Number);
+        }
+        
+        // Desenhar o fundo arredondado
+        const bgSize = size + 10;
+        const cornerRadius = 5;
+        
+        // Ajustar posição para alinhar com a margem (sem deslocamento negativo)
+        doc.roundedRect(x, y - bgSize/2, bgSize, bgSize, cornerRadius)
+           .fillColor(this.colors.iconBg) // Verde 
+           .fill();
+           
+        // Calcular a escala e posição para centralizar o SVG
+        const originalWidth = viewBox[2] - viewBox[0];
+        const originalHeight = viewBox[3] - viewBox[1];
+        const scale = size / Math.max(originalWidth, originalHeight) * 0.8;
+        
+        // Calcular deslocamento para centralizar o ícone no quadrado
+        const xOffset = x + bgSize/2 - (originalWidth * scale / 2);
+        const yOffset = y - (originalHeight * scale / 2);
+        
+        // Salvar o estado atual do documento
+        doc.save();
+        
+        // Transladar para a posição desejada e aplicar escala
+        doc.translate(xOffset, yOffset);
+        doc.scale(scale);
+        
+        // Aplicar a cor dos ícones
+        doc.fillColor(this.colors.iconColor); // Azul
+        
+        try {
+          // Extrair e desenhar os caminhos do SVG
+          const pathMatch = svgContent.match(/<path\s+[^>]*d=["']([^"']*)["'][^>]*>/gi);
+          
+          if (pathMatch) {
+            // Se encontrou caminhos SVG, renderizar cada um
+            pathMatch.forEach(pathElement => {
+              const dAttrMatch = pathElement.match(/d=["']([^"']*)["']/i);
+              
+              if (dAttrMatch && dAttrMatch[1]) {
+                // Verificar se o caminho tem estilo de preenchimento
+                const fillMatch = pathElement.match(/fill=["']([^"']*)["']/i);
+                if (fillMatch && fillMatch[1] === 'none') {
+                  // Apenas contorno
+                  doc.path(dAttrMatch[1]).stroke();
+                } else {
+                  // Preenchimento
+                  doc.path(dAttrMatch[1]).fill();
+                }
+              }
+            });
+            
+            // Restaurar o estado do documento
+            doc.restore();
+            return;
+          }
+        } catch (pathError) {
+          console.warn(`Erro ao processar os caminhos SVG: ${pathError}`);
+          doc.restore(); // Garantir que o estado seja restaurado em caso de erro
+        }
+        
+        // Se não conseguir renderizar o SVG diretamente, tentar usar um círculo como fallback
+        // com a primeira letra do nome do ícone
+        doc.restore();
+        doc.circle(x + bgSize/2, y, size / 3)
+           .fillColor(this.colors.iconColor)
+           .fill();
+           
+        doc.fontSize(size / 3)
+           .font(this.getFontBold())
+           .fillColor(this.colors.white)
+           .text(iconName.charAt(0).toUpperCase(), 
+                x + bgSize/2 - size / 8, 
+                y - size / 6, 
+                { align: 'center' });
+      } else {
+        console.warn(`Ícone '${iconName}.svg' não encontrado em: ${iconPath}`);
+        // Usar o ícone básico como fallback
+        this.drawIcon(doc, iconName, x, y, size);
+      }
+    } catch (error) {
+      console.error(`Erro ao adicionar ícone SVG '${iconName}':`, error);
+      // Usar o ícone básico como fallback em caso de erro
+      this.drawIcon(doc, iconName, x, y, size);
+    }
+  }
+
+  /**
+   * Desenha um ícone com fundo arredondado (fallback para quando o SVG não está disponível)
+   * @param doc Documento PDF
+   * @param iconName Nome do ícone (sem extensão)
+   * @param x Posição X
+   * @param y Posição Y
+   * @param size Tamanho do ícone
+   */
+  private drawIcon(doc: any, iconName: string, x: number, y: number, size: number = 20): void {
+    // Desenhar o fundo arredondado
+    const bgSize = size + 10;
+    const cornerRadius = 5;
+    
+    // Ajustar posição para alinhar com a margem (sem deslocamento negativo)
+    doc.roundedRect(x, y - bgSize/2, bgSize, bgSize, cornerRadius)
+       .fillColor(this.colors.iconBg) // Verde 
+       .fill();
+    
+    // Desenhar ícones simples baseados no nome
+    if (iconName === 'lampada') {
+      // Desenhar uma lâmpada simples (círculo)
+      doc.circle(x + bgSize/2, y, size / 4)
+         .fillColor(this.colors.iconColor) // Azul
+         .fill();
+    } 
+    else if (iconName === 'quebra-cabeca') {
+      // Desenhar pequenos quadrados para representar peças de quebra-cabeça
+      const pieceSize = size / 5;
+      doc.rect(x + bgSize/2 - pieceSize / 2, y - pieceSize / 2, pieceSize, pieceSize)
+         .fillColor(this.colors.iconColor)
+         .fill();
+      doc.rect(x + bgSize/2 + pieceSize / 2, y - pieceSize / 2, pieceSize, pieceSize)
+         .fillColor(this.colors.iconColor)
+         .fill();
+      doc.rect(x + bgSize/2 - pieceSize / 2, y + pieceSize / 2, pieceSize, pieceSize)
+         .fillColor(this.colors.iconColor)
+         .fill();
+    } 
+    else if (iconName === 'foguete') {
+      // Desenhar um triângulo para representar o foguete
+      doc.moveTo(x + bgSize/2, y - size / 4)
+         .lineTo(x + bgSize/2 - size / 4, y + size / 4)
+         .lineTo(x + bgSize/2 + size / 4, y + size / 4)
+         .closePath()
+         .fillColor(this.colors.iconColor)
+         .fill();
+    }
   }
 
   /**
@@ -195,6 +372,9 @@ export class PdfService {
     // Garantir que a análise combinada seja sempre pulada, evitando textos duplicados
     options.skipCombinedAnalysis = true;
     
+    // Definir margem esquerda padrão para todos os elementos
+    const leftMargin = 40;
+    
     // Criar os canvas com EXATAMENTE o mesmo tamanho
     const iaCanvas = createCanvas(chartSize, chartSize);
     const culturaCanvas = createCanvas(chartSize, chartSize);
@@ -247,31 +427,104 @@ export class PdfService {
     // Registrar as fontes
     this.registerFonts(doc);
     
-    // Cabeçalho azul escuro para a primeira página
+    // Caminhos das imagens de modelo
+    const primeiraImagemPath = path.join(this.assetsPath, 'modelo', 'pagina1.png');
+    const ultimaImagemPath = path.join(this.assetsPath, 'modelo', 'pagina2.png');
+    
+    // Verificar se as imagens de modelo existem
+    const primeiraImagemExiste = fs.existsSync(primeiraImagemPath);
+    const ultimaImagemExiste = fs.existsSync(ultimaImagemPath);
+    
+    // Adicionar a primeira página (pagina1.png)
+    if (primeiraImagemExiste) {
+      // Adicionar a imagem como capa, preenchendo toda a página
+      doc.image(primeiraImagemPath, 0, 0, {
+        fit: [doc.page.width, doc.page.height],
+        align: 'center',
+        valign: 'center'
+      });
+      
+      // Adicionar uma nova página para o conteúdo real
+      doc.addPage();
+    } else {
+      console.warn(`Imagem de capa não encontrada em: ${primeiraImagemPath}`);
+    }
+    
+    // Cabeçalho azul escuro para a primeira página de conteúdo
     doc.rect(0, 0, doc.page.width, 50)
        .fill('#1E2A4A');  // Azul escuro no topo da página
+    
+    // Carregar logo da Singulari
+    const logoPath = path.join(this.assetsPath, 'logo', 'logo-singulari.png');
+    
+    // Verificar se a logo existe
+    if (fs.existsSync(logoPath)) {
+      // Dimensões da logo - reduzida em 25%
+      const logoHeight = 22.5; // 30 * 0.75 = 22.5
+      const logoWidth = 90; // 120 * 0.75 = 90
+      
+      // Posicionar a logo à direita no cabeçalho
+      const logoX = doc.page.width - logoWidth - leftMargin;
+      // Ajustar para que a logo fique alinhada com o texto, mais abaixo
+      const alignedLogoY = 12; // Movido ainda mais para baixo (de 8 para 12)
+      
+      // Adicionar logo
+      doc.image(logoPath, logoX, alignedLogoY, { 
+        width: logoWidth,
+        height: logoHeight 
+      });
+    } else {
+      console.warn(`Logo não encontrada em: ${logoPath}`);
+    }
     
     // Texto do cabeçalho
     doc.fillColor(this.colors.white)
        .fontSize(14)
        .font(this.getFontBold())
-       .text('Diagnóstico | Relatório Completo', 50, 18, { align: 'left' });
+       .text('Diagnóstico', leftMargin, 18, { continued: true })
+       .font(this.getFontRegular())
+       .text(' | Relatório Completo', { align: 'left' });
     
-    // Configurar cabeçalho para as próximas páginas
+    // Variável para rastrear se estamos na última página
+    let addingLastPage = false;
+    
+    // Configurar cabeçalho para as próximas páginas (exceto a última)
     doc.on('pageAdded', () => {
+      // Se estamos adicionando a última página com a imagem, não adicionar cabeçalho
+      if (addingLastPage) {
+        return;
+      }
+      
       doc.rect(0, 0, doc.page.width, 50)
          .fill('#1E2A4A');
+         
+      // Adicionar logo em cada página nova
+      const logoPath = path.join(this.assetsPath, 'logo', 'logo-singulari.png');
+      if (fs.existsSync(logoPath)) {
+        const logoHeight = 22.5;
+        const logoWidth = 90;
+        const logoX = doc.page.width - logoWidth - leftMargin;
+        const alignedLogoY = 12;
+        
+        doc.image(logoPath, logoX, alignedLogoY, { 
+          width: logoWidth,
+          height: logoHeight 
+        });
+      }
+      
       doc.fillColor(this.colors.white)
          .fontSize(14)
          .font(this.getFontBold())
-         .text('Diagnóstico | Relatório Completo', 50, 18, { align: 'left' });
+         .text('Diagnóstico', leftMargin, 18, { continued: true })
+         .font(this.getFontRegular())
+         .text(' | Relatório Completo', { align: 'left' });
     });
        
     // Título principal 'Seu resultado' centralizado - com espaço adequado do cabeçalho
-    doc.fontSize(28)
+    doc.fontSize(34)
        .font(this.getFontBold())
        .fillColor(this.colors.primary)  // Cor primária (azul escuro)
-       .text('Seu resultado', 40, 100, { width: doc.page.width - 80, align: 'center' })
+       .text('Seu resultado', 40, 100, { width: doc.page.width - 60, align: 'center' })
        .moveDown(1);
        
     // Calcular pontuações e níveis
@@ -295,19 +548,19 @@ export class PdfService {
     const fullWidth = doc.page.width - 80; // 40px de margem de cada lado
     
     // Seção de Inteligência Artificial
-    doc.fontSize(14)
+    doc.fontSize(16)
        .fillColor(this.colors.secondary)
        .font(this.getFontBold())
        .text('NÍVEL DE MATURIDADE EM INTELIGÊNCIA ARTIFICIAL', 40, doc.y + 10, { width: fullWidth, align: 'center' });
     
     // Nome do nível IA
-    doc.fontSize(18)
+    doc.fontSize(20)
        .fillColor(this.colors.dark)
        .font(this.getFontBold())
        .text(iaLevel, 40, doc.y + 10, { width: fullWidth, align: 'center' });
     
     // Descrição do nível IA
-    doc.fontSize(10)
+    doc.fontSize(12)
        .fillColor(this.colors.secondary)
        .font(this.getFontRegular())
        .text(iaDescription, 40, doc.y + 5, { width: fullWidth, align: 'center' })
@@ -322,19 +575,19 @@ export class PdfService {
     doc.y += chartDisplaySize * 0.85 + 40;
     
     // Seção de Cultura
-    doc.fontSize(14)
+    doc.fontSize(16)
        .fillColor(this.colors.secondary)
        .font(this.getFontBold())
        .text('GRAU DE ALINHAMENTO CULTURAL COM INOVAÇÃO', 40, doc.y, { width: fullWidth, align: 'center' });
     
     // Nome do nível Cultura
-    doc.fontSize(18)
+    doc.fontSize(20)
        .fillColor(this.colors.dark)
        .font(this.getFontBold())
        .text(culturaLevel, 40, doc.y + 10, { width: fullWidth, align: 'center' });
     
     // Descrição do nível Cultura
-    doc.fontSize(10)
+    doc.fontSize(12)
        .fillColor(this.colors.secondary)
        .font(this.getFontRegular())
        .text(culturaDescription, 40, doc.y + 5, { width: fullWidth, align: 'center' })
@@ -357,7 +610,7 @@ export class PdfService {
     doc.fontSize(18)
        .font(this.getFontBold())
        .fillColor(this.colors.dark)
-       .text('O que isso significa para sua empresa?', 60, doc.y, { width: doc.page.width - 120, align: 'left' })
+       .text('O que isso significa para sua empresa?', leftMargin, doc.y, { width: doc.page.width - 120, align: 'left' })
        .moveDown(1);
        
     // Usar as pontuações já calculadas anteriormente
@@ -378,26 +631,26 @@ export class PdfService {
       doc.fontSize(12)
          .font(this.getFontRegular())
          .fillColor(this.colors.secondary)
-         .text('•', 60, doc.y, { continued: true })
-         .text(' ' + point, { width: doc.page.width - 140, align: 'left' })
+         .text('•', leftMargin, doc.y, { continued: true })
+         .text(' ' + point, { width: doc.page.width - (leftMargin + 20), align: 'left' })
          .moveDown(1);
     });
     
-    // Adicionar nova página para recomendações
-    doc.addPage();
+    // Adicionar cabeçalho "RECOMENDAÇÕES SINGULARI" na mesma página
+    doc.moveDown(1.5);
     
     // Adicionar cabeçalho "RECOMENDAÇÕES SINGULARI"
-    doc.fontSize(22)
+    doc.fontSize(16)
       .font(this.getFontBold())
       .fillColor(this.colors.secondary) // Cor secundária (cinza)
-      .text('RECOMENDAÇÕES', 60, doc.y + 20)
+      .text('RECOMENDAÇÕES', leftMargin, doc.y + 20)
       .moveDown(0.2);
     
-    doc.fontSize(30)
+    doc.fontSize(42)
       .font(this.getFontBold())
       .fillColor(this.colors.primary) // Cor primária (azul escuro)
-      .text('SINGULARI', 60, doc.y)
-      .moveDown(1.5);
+      .text('SINGULARI', leftMargin, doc.y)
+      .moveDown(0.5); // Reduzindo o espaço antes dos níveis
     
     // Adicionar informações de nível - duas colunas
     const halfWidth = (pageWidth - (margin * 2)) / 2;
@@ -406,19 +659,22 @@ export class PdfService {
     doc.fontSize(10)
       .font(this.getFontBold())
       .fillColor(this.colors.secondary)
-      .text('NÍVEL DE MATURIDADE EM', 60, doc.y, { width: halfWidth, align: 'left' })
+      .text('NÍVEL DE MATURIDADE EM', leftMargin, doc.y, { width: halfWidth, align: 'left' })
       .moveDown(0.1);
     
     doc.fontSize(10)
       .font(this.getFontBold())
       .fillColor(this.colors.secondary)
-      .text('INTELIGÊNCIA ARTIFICIAL', 60, doc.y, { width: halfWidth, align: 'left' })
+      .text('INTELIGÊNCIA ARTIFICIAL', leftMargin, doc.y, { width: halfWidth, align: 'left' })
       .moveDown(0.3);
+    
+    // Salvar posição para alinhar os textos de níveis
+    const leftTitleY = doc.y;
     
     doc.fontSize(16)
       .font(this.getFontBold())
       .fillColor(this.colors.primary)
-      .text(iaLevel, 60, doc.y, { width: halfWidth, align: 'left' })
+      .text(iaLevel, leftMargin, doc.y, { width: halfWidth, align: 'left' })
       .moveDown(0.5);
     
     // Salvar a posição y para alinhar as seções abaixo
@@ -428,19 +684,19 @@ export class PdfService {
     doc.fontSize(10)
       .font(this.getFontBold())
       .fillColor(this.colors.secondary)
-      .text('GRAU DE ALINHAMENTO CULTURAL', pageWidth / 2, startY - 43, { width: halfWidth, align: 'left' })
+      .text('GRAU DE ALINHAMENTO CULTURAL', pageWidth / 2, leftTitleY - 27, { width: halfWidth, align: 'left' })
       .moveDown(0.1);
     
     doc.fontSize(10)
       .font(this.getFontBold())
       .fillColor(this.colors.secondary)
-      .text('COM INOVAÇÃO', pageWidth / 2, startY - 30, { width: halfWidth, align: 'left' })
+      .text('COM INOVAÇÃO', pageWidth / 2, leftTitleY - 14, { width: halfWidth, align: 'left' })
       .moveDown(0.3);
     
     doc.fontSize(16)
       .font(this.getFontBold())
       .fillColor(this.colors.primary)
-      .text(culturaLevel, pageWidth / 2, startY - 15, { width: halfWidth, align: 'left' });
+      .text(culturaLevel, pageWidth / 2, leftTitleY, { width: halfWidth, align: 'left' });
     
     // Reiniciar posição y após as duas colunas
     doc.y = startY + 25;
@@ -450,28 +706,29 @@ export class PdfService {
     
     // ========== SEÇÃO: PONTOS FORTES ==========
     if (recommendations?.pontosFortes && recommendations.pontosFortes.length > 0) {
-      // Criar o ícone de lâmpada com fundo arredondado
-      const iconSize = 30;
-      const iconX = 60;
+      // Verificar se há espaço suficiente para o próximo item
+      const estimatedItemHeight = 20; // Altura estimada para cada item
+      if (doc.y + estimatedItemHeight > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        doc.moveDown(3);
+      }
+      
+      // Coordenadas para o ícone - alinhado à margem esquerda
+      const iconX = leftMargin;
       const iconY = doc.y + 10;
-      const cornerRadius = 5;
+      const iconSize = 20;
+      const bgSize = iconSize + 10;
+      // Espaço entre o ícone e o texto (aumentado para ter mais margem)
+      const iconTextGap = 15;
       
-      // Desenhar o quadrado com cantos arredondados
-      doc.roundedRect(iconX - 15, iconY - 15, iconSize, iconSize, cornerRadius)
-         .fillColor(this.colors.iconBg) // Verde 
-         .fill();
+      // Adicionar ícone de lâmpada (usando lightbulb da simple-icons)
+      this.drawSvgIcon(doc, 'lampada-de-ideia', iconX, iconY, iconSize);
       
-      // Desenhar o ícone de lâmpada (representado por um círculo e um retângulo)
-      // Nota: Poderia usar SVG para ícones mais complexos
-      doc.circle(iconX, iconY, iconSize / 4)
-         .fillColor(this.colors.iconColor) // Azul
-         .fill();
-      
-      // Adicionar texto "PONTOS FORTES" com ícone
+      // Adicionar texto "PONTOS FORTES" alinhado com a margem + espaço para o ícone
       doc.fontSize(14)
         .font(this.getFontBold())
-        .fillColor(this.colors.dark)
-        .text('PONTOS FORTES', 85, doc.y)
+        .fillColor(this.colors.primary) // Mudando para cor primária (azul)
+        .text('PONTOS FORTES', leftMargin + bgSize + iconTextGap, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
@@ -479,49 +736,55 @@ export class PdfService {
         .font(this.getFontRegular())
         .fillColor(this.colors.secondary);
       
-      recommendations.pontosFortes.forEach((ponto: string) => {
-        doc.text('•', 85, doc.y, { continued: true })
+      recommendations.pontosFortes.forEach((ponto: string, index: number) => {
+        // Verificar se há espaço suficiente para o próximo item
+        const estimatedItemHeight = 20; // Altura estimada para cada item
+        if (doc.y + estimatedItemHeight > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          doc.moveDown(3);
+          // Redefinir a cor após adicionar nova página
+          doc.fillColor(this.colors.secondary);
+        }
+        
+        doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
            .text(' ' + ponto, { 
              align: 'left',
-             width: pageWidth - 145 // Ajustar para alinhar com o título
+             width: pageWidth - (leftMargin + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
            })
            .moveDown(0.5);
       });
       
-      doc.moveDown(1);
+      // Aumentar o espaçamento entre as seções
+      doc.moveDown(2);
     }
     
     // ========== SEÇÃO: ÁREAS DE MELHORIA ==========
     if (recommendations?.areasMelhoria && recommendations.areasMelhoria.length > 0) {
-      // Criar o ícone de peças de quebra-cabeça com fundo arredondado
-      const iconSize = 30;
-      const iconX = 60;
+      // Verificar se há espaço suficiente para o título e pelo menos um item
+      const minimumSectionHeight = 50; // Altura mínima para título e um item
+      if (doc.y + minimumSectionHeight > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        doc.moveDown(3);
+        // Redefinir a cor após adicionar nova página
+        doc.fillColor(this.colors.secondary);
+      }
+      
+      // Coordenadas para o ícone - alinhado à margem esquerda
+      const iconX = leftMargin;
       const iconY = doc.y + 10;
-      const cornerRadius = 5;
+      const iconSize = 20;
+      const bgSize = iconSize + 10;
+      // Espaço entre o ícone e o texto (aumentado para ter mais margem)
+      const iconTextGap = 15;
       
-      // Desenhar o quadrado com cantos arredondados
-      doc.roundedRect(iconX - 15, iconY - 15, iconSize, iconSize, cornerRadius)
-         .fillColor(this.colors.iconBg) // Verde
-         .fill();
+      // Adicionar ícone de peças de quebra-cabeça
+      this.drawSvgIcon(doc, 'quebra-cabeca', iconX, iconY, iconSize);
       
-      // Desenhar o ícone de quebra-cabeças (simplificado)
-      // Desenhar pequenos quadrados para representar peças
-      const pieceSize = iconSize / 5;
-      doc.rect(iconX - pieceSize / 2, iconY - pieceSize / 2, pieceSize, pieceSize)
-         .fillColor(this.colors.iconColor) // Azul
-         .fill();
-      doc.rect(iconX + pieceSize / 2, iconY - pieceSize / 2, pieceSize, pieceSize)
-         .fillColor(this.colors.iconColor)
-         .fill();
-      doc.rect(iconX - pieceSize / 2, iconY + pieceSize / 2, pieceSize, pieceSize)
-         .fillColor(this.colors.iconColor)
-         .fill();
-      
-      // Adicionar texto "ÁREAS DE MELHORIA" com ícone
+      // Adicionar texto "ÁREAS DE MELHORIA" alinhado com a margem + espaço para o ícone
       doc.fontSize(14)
         .font(this.getFontBold())
-        .fillColor(this.colors.dark)
-        .text('ÁREAS DE MELHORIA', 85, doc.y)
+        .fillColor(this.colors.primary) // Mudando para cor primária (azul)
+        .text('ÁREAS DE MELHORIA', leftMargin + bgSize + iconTextGap, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
@@ -530,44 +793,54 @@ export class PdfService {
         .fillColor(this.colors.secondary);
       
       recommendations.areasMelhoria.forEach((area: string) => {
-        doc.text('•', 85, doc.y, { continued: true })
+        // Verificar se há espaço suficiente para o próximo item
+        const estimatedItemHeight = 20; // Altura estimada para cada item
+        if (doc.y + estimatedItemHeight > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          doc.moveDown(3);
+          // Redefinir a cor após adicionar nova página
+          doc.fillColor(this.colors.secondary);
+        }
+        
+        doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
            .text(' ' + area, { 
              align: 'left',
-             width: pageWidth - 145 // Ajustar para alinhar com o título
+             width: pageWidth - (leftMargin + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
            })
            .moveDown(0.5);
       });
       
-      doc.moveDown(1);
+      // Aumentar o espaçamento entre as seções
+      doc.moveDown(2);
     }
     
     // ========== SEÇÃO: RECOMENDAÇÕES ==========
     if (recommendations?.recomendacoes && recommendations.recomendacoes.length > 0) {
-      // Criar o ícone de foguete com fundo arredondado
-      const iconSize = 30;
-      const iconX = 60;
+      // Verificar se há espaço suficiente para o título e pelo menos um item
+      const minimumSectionHeight = 50; // Altura mínima para título e um item
+      if (doc.y + minimumSectionHeight > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage();
+        doc.moveDown(3);
+        // Redefinir a cor após adicionar nova página
+        doc.fillColor(this.colors.secondary);
+      }
+      
+      // Coordenadas para o ícone - alinhado à margem esquerda
+      const iconX = leftMargin;
       const iconY = doc.y + 10;
-      const cornerRadius = 5;
+      const iconSize = 20;
+      const bgSize = iconSize + 10;
+      // Espaço entre o ícone e o texto (aumentado para ter mais margem)
+      const iconTextGap = 15;
       
-      // Desenhar o quadrado com cantos arredondados
-      doc.roundedRect(iconX - 15, iconY - 15, iconSize, iconSize, cornerRadius)
-         .fillColor(this.colors.iconBg) // Verde
-         .fill();
+      // Adicionar ícone de foguete
+      this.drawSvgIcon(doc, 'foguete', iconX, iconY, iconSize);
       
-      // Desenhar o ícone de foguete (simplificado)
-      // Um triângulo para representar o foguete
-      doc.moveTo(iconX, iconY - iconSize / 4)
-         .lineTo(iconX - iconSize / 4, iconY + iconSize / 4)
-         .lineTo(iconX + iconSize / 4, iconY + iconSize / 4)
-         .closePath()
-         .fillColor(this.colors.iconColor) // Azul
-         .fill();
-      
-      // Adicionar texto "RECOMENDAÇÕES" com ícone
+      // Adicionar texto "RECOMENDAÇÕES" alinhado com a margem + espaço para o ícone
       doc.fontSize(14)
         .font(this.getFontBold())
-        .fillColor(this.colors.dark)
-        .text('RECOMENDAÇÕES', 85, doc.y)
+        .fillColor(this.colors.primary) // Mudando para cor primária (azul)
+        .text('RECOMENDAÇÕES', leftMargin + bgSize + iconTextGap, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
@@ -576,13 +849,40 @@ export class PdfService {
         .fillColor(this.colors.secondary);
       
       recommendations.recomendacoes.forEach((recomendacao: string) => {
-        doc.text('•', 85, doc.y, { continued: true })
+        // Verificar se há espaço suficiente para o próximo item
+        const estimatedItemHeight = 20; // Altura estimada para cada item
+        if (doc.y + estimatedItemHeight > doc.page.height - doc.page.margins.bottom) {
+          doc.addPage();
+          doc.moveDown(3);
+          // Redefinir a cor após adicionar nova página
+          doc.fillColor(this.colors.secondary);
+        }
+        
+        doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
            .text(' ' + recomendacao, { 
              align: 'left',
-             width: pageWidth - 145 // Ajustar para alinhar com o título
+             width: pageWidth - (leftMargin + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
            })
            .moveDown(0.5);
       });
+    }
+    
+    // Após gerar todo o conteúdo e antes de finalizar o documento, adicionar a última página
+    if (ultimaImagemExiste) {
+      // Marcar que estamos adicionando a última página
+      addingLastPage = true;
+      
+      // Adicionar uma nova página para a última imagem
+      doc.addPage();
+      
+      // Adicionar a imagem como última página, preenchendo toda a página
+      doc.image(ultimaImagemPath, 0, 0, {
+        fit: [doc.page.width, doc.page.height],
+        align: 'center',
+        valign: 'center'
+      });
+    } else {
+      console.warn(`Imagem de última página não encontrada em: ${ultimaImagemPath}`);
     }
     
     // Finalizar o documento
