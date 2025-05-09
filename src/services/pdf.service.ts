@@ -374,14 +374,25 @@ export class PdfService {
     options: PdfOptions = {}
   ): Promise<Readable> {
     // Configurações padrão
-    const pageSize = options.pageSize || 'A4';
-    const pageOrientation = options.pageOrientation || 'portrait';
+    const defaultOptions: PdfOptions = {
+      title: options.title || 'Diagnóstico de Maturidade em IA e Cultural',
+      author: options.author || 'Singulari',
+      subject: options.subject || 'Relatório de Diagnóstico',
+      keywords: options.keywords || 'IA, cultura, diagnóstico, maturidade',
+      fileName: options.fileName || 'diagnostico_maturidade.pdf',
+      pageSize: options.pageSize || 'A4',
+      pageOrientation: options.pageOrientation || 'portrait',
+      addHeaderOnNewPages: options.addHeaderOnNewPages !== false // true por padrão, a menos que seja explicitamente false
+    };
+    
+    // Mesclar opções com valores padrão
+    const mergedOptions = { ...defaultOptions, ...options };
     
     // Definir tamanho EXATO para ambos os gráficos - mesmo tamanho garantido
     const chartSize = 300; // Tamanho fixo para ambos os gráficos
     
     // Garantir que a análise combinada seja sempre pulada, evitando textos duplicados
-    options.skipCombinedAnalysis = true;
+    mergedOptions.skipCombinedAnalysis = true;
     
     // Definir margem esquerda padrão para todos os elementos
     const leftMargin = 40;
@@ -423,14 +434,14 @@ export class PdfService {
     
     // Criar o documento PDF com margens menores
     const doc = new PDFDocument({ 
-      size: pageSize, 
-      layout: pageOrientation,
+      size: mergedOptions.pageSize, 
+      layout: mergedOptions.pageOrientation,
       margins: { top: 60, bottom: 60, left: 60, right: 60 },  // Margens ajustadas em todos os lados
       info: {
-        Title: options.title || 'Diagnóstico de IA e Cultura',
-        Author: options.author || 'Singulari - Diagnóstico de IA',
-        Subject: options.subject || 'Relatório de Diagnóstico',
-        Keywords: options.keywords || 'IA, Cultura, Diagnóstico',
+        Title: mergedOptions.title,
+        Author: mergedOptions.author,
+        Subject: mergedOptions.subject,
+        Keywords: mergedOptions.keywords,
         CreationDate: new Date(),
       }
     });
@@ -628,9 +639,9 @@ export class PdfService {
     const analysis = this.analyzeCombination(iaScore, culturaScore);
     
     // Cálculo para dimensionamento do PDF
-    const pageWidth = pageOrientation === 'portrait' ? 
-      (pageSize === 'A4' ? 595.28 : 612) : 
-      (pageSize === 'A4' ? 841.89 : 792);
+    const pageWidth = mergedOptions.pageOrientation === 'portrait' ? 
+      (mergedOptions.pageSize === 'A4' ? 595.28 : 612) : 
+      (mergedOptions.pageSize === 'A4' ? 841.89 : 792);
     
     const margin = 60; // Margem ajustada para 60
     
@@ -713,7 +724,7 @@ export class PdfService {
     doc.y = startY + 25;
     
     // Usar recomendações da opção ou da análise combinada
-    const recommendations = options.recommendations || analysis.recommendations;
+    const recommendations = mergedOptions.recommendations || analysis.recommendations;
     
     // ========== SEÇÃO: PONTOS FORTES ==========
     if (recommendations?.pontosFortes && recommendations.pontosFortes.length > 0) {
@@ -754,8 +765,43 @@ export class PdfService {
         
         if (doc.y + estimatedItemHeight > doc.page.height - doc.page.margins.bottom) {
           doc.addPage();
-          doc.moveDown(3);
-          // Restaurar a formatação após a nova página
+          
+          // Adicionar cabeçalho padrão na nova página se necessário
+          if (mergedOptions.addHeaderOnNewPages !== false) {
+            // Adicionar um cabeçalho para a nova página
+            const headerHeight = 30;
+            doc.fillColor(this.colors.primary)
+               .rect(0, 0, doc.page.width, headerHeight)
+               .fill();
+            
+            // Logo ou texto no cabeçalho se necessário
+            if (mergedOptions.companyName) {
+              doc.fontSize(10)
+                 .font(this.getFontBold())
+                 .fillColor('white')
+                 .text(mergedOptions.companyName, 20, 10);
+            }
+            
+            doc.moveDown(2);
+          } else {
+            doc.moveDown(3);
+          }
+          
+          // Adicionar título "PONTOS FORTES (continuação)" na nova página
+          const iconX = leftMargin;
+          const iconY = doc.y + 10;
+          
+          // Adicionar ícone de escudo novamente
+          this.drawSvgIcon(doc, 'escudo', iconX, iconY, iconSize);
+          
+          // Adicionar texto "PONTOS FORTES (continuação)" alinhado com a margem + espaço para o ícone
+          doc.fontSize(14)
+            .font(this.getFontBold())
+            .fillColor(this.colors.primary)
+            .text('PONTOS FORTES (continuação)', leftMargin + bgSize + iconTextGap, doc.y)
+            .moveDown(0.5);
+          
+          // Restaurar a formatação após o título na nova página
           doc.fontSize(12)
              .font(this.getFontRegular())
              .fillColor(this.colors.secondary);
@@ -812,8 +858,43 @@ export class PdfService {
         
         if (doc.y + estimatedItemHeight > doc.page.height - doc.page.margins.bottom) {
           doc.addPage();
-          doc.moveDown(3);
-          // Restaurar a formatação após a nova página
+          
+          // Adicionar cabeçalho padrão na nova página se necessário
+          if (mergedOptions.addHeaderOnNewPages !== false) {
+            // Adicionar um cabeçalho para a nova página
+            const headerHeight = 30;
+            doc.fillColor(this.colors.primary)
+               .rect(0, 0, doc.page.width, headerHeight)
+               .fill();
+            
+            // Logo ou texto no cabeçalho se necessário
+            if (mergedOptions.companyName) {
+              doc.fontSize(10)
+                 .font(this.getFontBold())
+                 .fillColor('white')
+                 .text(mergedOptions.companyName, 20, 10);
+            }
+            
+            doc.moveDown(2);
+          } else {
+            doc.moveDown(3);
+          }
+          
+          // Adicionar título "ÁREAS DE MELHORIA (continuação)" na nova página
+          const iconX = leftMargin;
+          const iconY = doc.y + 10;
+          
+          // Adicionar ícone de alvo novamente
+          this.drawSvgIcon(doc, 'alvo', iconX, iconY, iconSize);
+          
+          // Adicionar texto "ÁREAS DE MELHORIA (continuação)" alinhado com a margem + espaço para o ícone
+          doc.fontSize(14)
+            .font(this.getFontBold())
+            .fillColor(this.colors.primary)
+            .text('ÁREAS DE MELHORIA (continuação)', leftMargin + bgSize + iconTextGap, doc.y)
+            .moveDown(0.5);
+          
+          // Restaurar a formatação após o título na nova página
           doc.fontSize(12)
              .font(this.getFontRegular())
              .fillColor(this.colors.secondary);
@@ -870,8 +951,43 @@ export class PdfService {
         
         if (doc.y + estimatedItemHeight > doc.page.height - doc.page.margins.bottom) {
           doc.addPage();
-          doc.moveDown(3);
-          // Restaurar a formatação após a nova página
+          
+          // Adicionar cabeçalho padrão na nova página se necessário
+          if (mergedOptions.addHeaderOnNewPages !== false) {
+            // Adicionar um cabeçalho para a nova página
+            const headerHeight = 30;
+            doc.fillColor(this.colors.primary)
+               .rect(0, 0, doc.page.width, headerHeight)
+               .fill();
+            
+            // Logo ou texto no cabeçalho se necessário
+            if (mergedOptions.companyName) {
+              doc.fontSize(10)
+                 .font(this.getFontBold())
+                 .fillColor('white')
+                 .text(mergedOptions.companyName, 20, 10);
+            }
+            
+            doc.moveDown(2);
+          } else {
+            doc.moveDown(3);
+          }
+          
+          // Adicionar título "RECOMENDAÇÕES (continuação)" na nova página
+          const iconX = leftMargin;
+          const iconY = doc.y + 10;
+          
+          // Adicionar ícone de foguete novamente
+          this.drawSvgIcon(doc, 'foguete', iconX, iconY, iconSize);
+          
+          // Adicionar texto "RECOMENDAÇÕES (continuação)" alinhado com a margem + espaço para o ícone
+          doc.fontSize(14)
+            .font(this.getFontBold())
+            .fillColor(this.colors.primary) // Mesma cor primária (azul)
+            .text('RECOMENDAÇÕES (continuação)', leftMargin + bgSize + iconTextGap, doc.y)
+            .moveDown(0.5);
+          
+          // Restaurar a formatação após o título na nova página
           doc.fontSize(12)
              .font(this.getFontRegular())
              .fillColor(this.colors.secondary);

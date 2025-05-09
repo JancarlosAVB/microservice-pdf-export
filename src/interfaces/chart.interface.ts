@@ -36,6 +36,7 @@ export interface PdfOptions {
   submission_id?: number; // ID da submissão do formulário
   diagnosticText?: string;
   skipCombinedAnalysis?: boolean; // Se true, pula a exibição da análise combinada
+  addHeaderOnNewPages?: boolean; // Se true, adiciona cabeçalho nas novas páginas
   recommendations?: {
     pontosFortes?: string[];
     areasMelhoria?: string[];
