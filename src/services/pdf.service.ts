@@ -11,6 +11,18 @@ import { recommendationsData } from '../data/recommendations.data';
 export class PdfService {
   private chartService: ChartService;
   private assetsPath: string;
+  private fontRegular: string;
+  private fontBold: string;
+  
+  // Cores padrão para o PDF
+  private colors = {
+    primary: '#40528d',      // Azul escuro para títulos principais
+    secondary: '#808080',    // Cinza para subtítulos e textos secundários
+    dark: '#000000',         // Preto para textos de destaque
+    white: '#FFFFFF',        // Branco para textos sobre fundos escuros
+    iconBg: '#cad64a',       // Verde para fundo dos ícones
+    iconColor: '#40528d'     // Azul para os ícones
+  };
   
   // Mapeamento de texto diagnóstico para combinações de IA e Cultura
   private diagnosticMapping: Record<string, string> = {
@@ -39,6 +51,49 @@ export class PdfService {
     this.chartService = new ChartService();
     // Caminho para os assets (imagens, fontes, etc.)
     this.assetsPath = path.join(process.cwd(), 'assets');
+    
+    // Definir caminhos das fontes
+    this.fontRegular = path.join(this.assetsPath, 'fonts', 'Asap-Regular.ttf');
+    this.fontBold = path.join(this.assetsPath, 'fonts', 'Asap-Bold.ttf');
+    
+    // Criar diretório de fontes se não existir
+    const fontsDir = path.join(this.assetsPath, 'fonts');
+    if (!fs.existsSync(fontsDir)) {
+      fs.mkdirSync(fontsDir, { recursive: true });
+    }
+  }
+
+  /**
+   * Registra as fontes no PDFDocument
+   * @param doc Documento PDF
+   */
+  private registerFonts(doc: any): void {
+    // Verificar se os arquivos de fonte existem
+    if (fs.existsSync(this.fontRegular)) {
+      doc.registerFont('AsapRegular', this.fontRegular);
+    } else {
+      console.warn('Fonte Asap Regular não encontrada. Usando Helvetica como fallback.');
+    }
+    
+    if (fs.existsSync(this.fontBold)) {
+      doc.registerFont('AsapBold', this.fontBold);
+    } else {
+      console.warn('Fonte Asap Bold não encontrada. Usando Helvetica-Bold como fallback.');
+    }
+  }
+
+  /**
+   * Obtém o nome da fonte regular com fallback
+   */
+  private getFontRegular(): string {
+    return fs.existsSync(this.fontRegular) ? 'AsapRegular' : 'Helvetica';
+  }
+
+  /**
+   * Obtém o nome da fonte bold com fallback
+   */
+  private getFontBold(): string {
+    return fs.existsSync(this.fontBold) ? 'AsapBold' : 'Helvetica-Bold';
   }
 
   /**
@@ -189,30 +244,33 @@ export class PdfService {
       }
     });
     
+    // Registrar as fontes
+    this.registerFonts(doc);
+    
     // Cabeçalho azul escuro para a primeira página
     doc.rect(0, 0, doc.page.width, 50)
-       .fill('#222f51');  // Azul escuro no topo da página
+       .fill('#1E2A4A');  // Azul escuro no topo da página
     
     // Texto do cabeçalho
-    doc.fillColor('white')
+    doc.fillColor(this.colors.white)
        .fontSize(14)
-       .font('Helvetica-Bold')
+       .font(this.getFontBold())
        .text('Diagnóstico | Relatório Completo', 50, 18, { align: 'left' });
     
     // Configurar cabeçalho para as próximas páginas
     doc.on('pageAdded', () => {
       doc.rect(0, 0, doc.page.width, 50)
-         .fill('#222f51A');
-      doc.fillColor('white')
+         .fill('#1E2A4A');
+      doc.fillColor(this.colors.white)
          .fontSize(14)
-         .font('Helvetica-Bold')
+         .font(this.getFontBold())
          .text('Diagnóstico | Relatório Completo', 50, 18, { align: 'left' });
     });
        
     // Título principal 'Seu resultado' centralizado - com espaço adequado do cabeçalho
     doc.fontSize(28)
-       .font('Helvetica-Bold')
-       .fillColor('#40528d')  // Azul mais claro
+       .font(this.getFontBold())
+       .fillColor(this.colors.primary)  // Cor primária (azul escuro)
        .text('Seu resultado', 40, 100, { width: doc.page.width - 80, align: 'center' })
        .moveDown(1);
        
@@ -237,21 +295,21 @@ export class PdfService {
     const fullWidth = doc.page.width - 80; // 40px de margem de cada lado
     
     // Seção de Inteligência Artificial
-    doc.fontSize(12)
-       .fillColor('#808080')
-       .font('Helvetica-Bold')
+    doc.fontSize(14)
+       .fillColor(this.colors.secondary)
+       .font(this.getFontBold())
        .text('NÍVEL DE MATURIDADE EM INTELIGÊNCIA ARTIFICIAL', 40, doc.y + 10, { width: fullWidth, align: 'center' });
     
     // Nome do nível IA
-    doc.fontSize(14)
-       .fillColor('#000000')
-       .font('Helvetica-Bold')
+    doc.fontSize(18)
+       .fillColor(this.colors.dark)
+       .font(this.getFontBold())
        .text(iaLevel, 40, doc.y + 10, { width: fullWidth, align: 'center' });
     
     // Descrição do nível IA
-    doc.fontSize(8)
-       .fillColor('#808080')
-       .font('Helvetica')
+    doc.fontSize(10)
+       .fillColor(this.colors.secondary)
+       .font(this.getFontRegular())
        .text(iaDescription, 40, doc.y + 5, { width: fullWidth, align: 'center' })
        .moveDown(0.5);
     
@@ -264,21 +322,21 @@ export class PdfService {
     doc.y += chartDisplaySize * 0.85 + 40;
     
     // Seção de Cultura
-    doc.fontSize(12)
-       .fillColor('#808080')
-       .font('Helvetica-Bold')
+    doc.fontSize(14)
+       .fillColor(this.colors.secondary)
+       .font(this.getFontBold())
        .text('GRAU DE ALINHAMENTO CULTURAL COM INOVAÇÃO', 40, doc.y, { width: fullWidth, align: 'center' });
     
     // Nome do nível Cultura
-    doc.fontSize(14)
-       .fillColor('#000000')
-       .font('Helvetica-Bold')
+    doc.fontSize(18)
+       .fillColor(this.colors.dark)
+       .font(this.getFontBold())
        .text(culturaLevel, 40, doc.y + 10, { width: fullWidth, align: 'center' });
     
     // Descrição do nível Cultura
-    doc.fontSize(8)
-       .fillColor('#808080')
-       .font('Helvetica')
+    doc.fontSize(10)
+       .fillColor(this.colors.secondary)
+       .font(this.getFontRegular())
        .text(culturaDescription, 40, doc.y + 5, { width: fullWidth, align: 'center' })
        .moveDown(0.5);
     
@@ -296,9 +354,9 @@ export class PdfService {
     doc.moveDown(3);
     
     // Adicionar seção 'O que isso significa para sua empresa?'
-    doc.fontSize(14)
-       .font('Helvetica-Bold')
-       .fillColor('#000000')
+    doc.fontSize(18)
+       .font(this.getFontBold())
+       .fillColor(this.colors.dark)
        .text('O que isso significa para sua empresa?', 60, doc.y, { width: doc.page.width - 120, align: 'left' })
        .moveDown(1);
        
@@ -317,9 +375,9 @@ export class PdfService {
     
     // Adicionar cada item da lista com bullet point
     companyMeaning.forEach(point => {
-      doc.fontSize(10)
-         .font('Helvetica')
-         .fillColor('#808080')
+      doc.fontSize(12)
+         .font(this.getFontRegular())
+         .fillColor(this.colors.secondary)
          .text('•', 60, doc.y, { continued: true })
          .text(' ' + point, { width: doc.page.width - 140, align: 'left' })
          .moveDown(1);
@@ -329,15 +387,15 @@ export class PdfService {
     doc.addPage();
     
     // Adicionar cabeçalho "RECOMENDAÇÕES SINGULARI"
-    doc.fontSize(14)
-      .font('Helvetica-Bold')
-      .fillColor('#808080') // Cor cinza  
+    doc.fontSize(22)
+      .font(this.getFontBold())
+      .fillColor(this.colors.secondary) // Cor secundária (cinza)
       .text('RECOMENDAÇÕES', 60, doc.y + 20)
       .moveDown(0.2);
     
     doc.fontSize(30)
-      .font('Helvetica-Bold')
-      .fillColor('#40528d') // Cor azul escuro
+      .font(this.getFontBold())
+      .fillColor(this.colors.primary) // Cor primária (azul escuro)
       .text('SINGULARI', 60, doc.y)
       .moveDown(1.5);
     
@@ -346,20 +404,20 @@ export class PdfService {
     
     // Coluna esquerda - Nível de IA
     doc.fontSize(10)
-      .font('Helvetica')
-      .fillColor('#808080')
+      .font(this.getFontBold())
+      .fillColor(this.colors.secondary)
       .text('NÍVEL DE MATURIDADE EM', 60, doc.y, { width: halfWidth, align: 'left' })
       .moveDown(0.1);
     
     doc.fontSize(10)
-      .font('Helvetica')
-      .fillColor('#808080')
+      .font(this.getFontBold())
+      .fillColor(this.colors.secondary)
       .text('INTELIGÊNCIA ARTIFICIAL', 60, doc.y, { width: halfWidth, align: 'left' })
       .moveDown(0.3);
     
     doc.fontSize(16)
-      .font('Helvetica-Bold')
-      .fillColor('#40528d') // azul escuro 
+      .font(this.getFontBold())
+      .fillColor(this.colors.primary)
       .text(iaLevel, 60, doc.y, { width: halfWidth, align: 'left' })
       .moveDown(0.5);
     
@@ -368,20 +426,20 @@ export class PdfService {
     
     // Coluna direita - Nível de Cultura
     doc.fontSize(10)
-      .font('Helvetica')
-      .fillColor('#666666')
+      .font(this.getFontBold())
+      .fillColor(this.colors.secondary)
       .text('GRAU DE ALINHAMENTO CULTURAL', pageWidth / 2, startY - 43, { width: halfWidth, align: 'left' })
       .moveDown(0.1);
     
     doc.fontSize(10)
-      .font('Helvetica')
-      .fillColor('#666666')
+      .font(this.getFontBold())
+      .fillColor(this.colors.secondary)
       .text('COM INOVAÇÃO', pageWidth / 2, startY - 30, { width: halfWidth, align: 'left' })
       .moveDown(0.3);
     
     doc.fontSize(16)
-      .font('Helvetica-Bold')
-      .fillColor('#40528d') // azul escuro
+      .font(this.getFontBold())
+      .fillColor(this.colors.primary)
       .text(culturaLevel, pageWidth / 2, startY - 15, { width: halfWidth, align: 'left' });
     
     // Reiniciar posição y após as duas colunas
@@ -392,22 +450,34 @@ export class PdfService {
     
     // ========== SEÇÃO: PONTOS FORTES ==========
     if (recommendations?.pontosFortes && recommendations.pontosFortes.length > 0) {
-      // Criar o ícone de lâmpada (amarelo) - simulando com um círculo colorido
-      doc.circle(60, doc.y + 10, 15)
-         .fillColor('#CDDC39') // Verde claro/amarelo
+      // Criar o ícone de lâmpada com fundo arredondado
+      const iconSize = 30;
+      const iconX = 60;
+      const iconY = doc.y + 10;
+      const cornerRadius = 5;
+      
+      // Desenhar o quadrado com cantos arredondados
+      doc.roundedRect(iconX - 15, iconY - 15, iconSize, iconSize, cornerRadius)
+         .fillColor(this.colors.iconBg) // Verde 
+         .fill();
+      
+      // Desenhar o ícone de lâmpada (representado por um círculo e um retângulo)
+      // Nota: Poderia usar SVG para ícones mais complexos
+      doc.circle(iconX, iconY, iconSize / 4)
+         .fillColor(this.colors.iconColor) // Azul
          .fill();
       
       // Adicionar texto "PONTOS FORTES" com ícone
       doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#333333')
+        .font(this.getFontBold())
+        .fillColor(this.colors.dark)
         .text('PONTOS FORTES', 85, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
       doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333');
+        .font(this.getFontRegular())
+        .fillColor(this.colors.secondary);
       
       recommendations.pontosFortes.forEach((ponto: string) => {
         doc.text('•', 85, doc.y, { continued: true })
@@ -423,22 +493,41 @@ export class PdfService {
     
     // ========== SEÇÃO: ÁREAS DE MELHORIA ==========
     if (recommendations?.areasMelhoria && recommendations.areasMelhoria.length > 0) {
-      // Criar o ícone de gráfico crescente (azul) - simulando com um círculo colorido
-      doc.circle(60, doc.y + 10, 15)
-         .fillColor('#03A9F4') // Azul claro
+      // Criar o ícone de peças de quebra-cabeça com fundo arredondado
+      const iconSize = 30;
+      const iconX = 60;
+      const iconY = doc.y + 10;
+      const cornerRadius = 5;
+      
+      // Desenhar o quadrado com cantos arredondados
+      doc.roundedRect(iconX - 15, iconY - 15, iconSize, iconSize, cornerRadius)
+         .fillColor(this.colors.iconBg) // Verde
+         .fill();
+      
+      // Desenhar o ícone de quebra-cabeças (simplificado)
+      // Desenhar pequenos quadrados para representar peças
+      const pieceSize = iconSize / 5;
+      doc.rect(iconX - pieceSize / 2, iconY - pieceSize / 2, pieceSize, pieceSize)
+         .fillColor(this.colors.iconColor) // Azul
+         .fill();
+      doc.rect(iconX + pieceSize / 2, iconY - pieceSize / 2, pieceSize, pieceSize)
+         .fillColor(this.colors.iconColor)
+         .fill();
+      doc.rect(iconX - pieceSize / 2, iconY + pieceSize / 2, pieceSize, pieceSize)
+         .fillColor(this.colors.iconColor)
          .fill();
       
       // Adicionar texto "ÁREAS DE MELHORIA" com ícone
       doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#333333')
+        .font(this.getFontBold())
+        .fillColor(this.colors.dark)
         .text('ÁREAS DE MELHORIA', 85, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
       doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333');
+        .font(this.getFontRegular())
+        .fillColor(this.colors.secondary);
       
       recommendations.areasMelhoria.forEach((area: string) => {
         doc.text('•', 85, doc.y, { continued: true })
@@ -454,22 +543,37 @@ export class PdfService {
     
     // ========== SEÇÃO: RECOMENDAÇÕES ==========
     if (recommendations?.recomendacoes && recommendations.recomendacoes.length > 0) {
-      // Criar o ícone de engrenagem (verde) - simulando com um círculo colorido
-      doc.circle(60, doc.y + 10, 15)
-         .fillColor('#8BC34A') // Verde
+      // Criar o ícone de foguete com fundo arredondado
+      const iconSize = 30;
+      const iconX = 60;
+      const iconY = doc.y + 10;
+      const cornerRadius = 5;
+      
+      // Desenhar o quadrado com cantos arredondados
+      doc.roundedRect(iconX - 15, iconY - 15, iconSize, iconSize, cornerRadius)
+         .fillColor(this.colors.iconBg) // Verde
+         .fill();
+      
+      // Desenhar o ícone de foguete (simplificado)
+      // Um triângulo para representar o foguete
+      doc.moveTo(iconX, iconY - iconSize / 4)
+         .lineTo(iconX - iconSize / 4, iconY + iconSize / 4)
+         .lineTo(iconX + iconSize / 4, iconY + iconSize / 4)
+         .closePath()
+         .fillColor(this.colors.iconColor) // Azul
          .fill();
       
       // Adicionar texto "RECOMENDAÇÕES" com ícone
       doc.fontSize(14)
-        .font('Helvetica-Bold')
-        .fillColor('#333333')
+        .font(this.getFontBold())
+        .fillColor(this.colors.dark)
         .text('RECOMENDAÇÕES', 85, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
       doc.fontSize(12)
-        .font('Helvetica')
-        .fillColor('#333333');
+        .font(this.getFontRegular())
+        .fillColor(this.colors.secondary);
       
       recommendations.recomendacoes.forEach((recomendacao: string) => {
         doc.text('•', 85, doc.y, { continued: true })
