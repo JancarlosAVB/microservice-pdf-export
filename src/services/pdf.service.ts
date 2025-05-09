@@ -658,9 +658,6 @@ export class PdfService {
          .moveDown(1);
     });
     
-    // Adicionar cabeçalho "RECOMENDAÇÕES SINGULARI" na mesma página
-    doc.moveDown(1.5);
-    
     // Adicionar cabeçalho "RECOMENDAÇÕES SINGULARI"
     doc.fontSize(16)
       .font(this.getFontBold())
@@ -690,7 +687,8 @@ export class PdfService {
       }
       
       // Coordenadas para o ícone - alinhado à margem esquerda
-      const iconX = leftMargin;
+      // Reduzir margem para começar mais à esquerda
+      const iconX = leftMargin - 10; // Reduzindo 10 pixels 
       const iconY = doc.y + 10;
       const iconSize = 20;
       const bgSize = iconSize + 10;
@@ -704,7 +702,7 @@ export class PdfService {
       doc.fontSize(14)
         .font(this.getFontBold())
         .fillColor(this.colors.primary) // Mudando para cor primária (azul)
-        .text('PONTOS FORTES', leftMargin + bgSize + iconTextGap, doc.y)
+        .text('PONTOS FORTES', iconX + bgSize + iconTextGap, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
@@ -723,18 +721,38 @@ export class PdfService {
           // Adicionar cabeçalho padrão na nova página se necessário
           if (mergedOptions.addHeaderOnNewPages !== false) {
             // Adicionar um cabeçalho para a nova página
-            const headerHeight = 30;
-            doc.fillColor(this.colors.primary)
-               .rect(0, 0, doc.page.width, headerHeight)
-               .fill();
+            const headerHeight = 50; // Altura ajustada para 50 (era 30)
+            doc.rect(0, 0, doc.page.width, headerHeight)
+               .fill('#1E2A4A');  // Azul escuro no topo da página (mesmo da primeira página)
             
-            // Logo ou texto no cabeçalho se necessário
-            if (mergedOptions.companyName) {
-              doc.fontSize(10)
-                 .font(this.getFontBold())
-                 .fillColor('white')
-                 .text(mergedOptions.companyName, 20, 10);
+            // Carregar logo da Singulari
+            const logoPath = path.join(this.assetsPath, 'logo', 'logo-singulari.png');
+            
+            // Verificar se a logo existe
+            if (fs.existsSync(logoPath)) {
+              // Dimensões da logo - reduzida em 25%
+              const logoHeight = 22.5; // 30 * 0.75 = 22.5
+              const logoWidth = 90; // 120 * 0.75 = 90
+              
+              // Posicionar a logo à direita no cabeçalho
+              const logoX = doc.page.width - logoWidth - 40;
+              // Ajustar para que a logo fique alinhada com o texto, mais abaixo
+              const alignedLogoY = 12; // Movido ainda mais para baixo (de 8 para 12)
+              
+              // Adicionar logo
+              doc.image(logoPath, logoX, alignedLogoY, { 
+                width: logoWidth,
+                height: logoHeight 
+              });
             }
+            
+            // Texto do cabeçalho
+            doc.fillColor(this.colors.white)
+               .fontSize(14)
+               .font(this.getFontBold())
+               .text('Diagnóstico', leftMargin, 18, { continued: true })
+               .font(this.getFontRegular())
+               .text(' | Relatório Completo', { align: 'left' });
             
             doc.moveDown(2);
           } else {
@@ -742,7 +760,7 @@ export class PdfService {
           }
           
           // Adicionar título "PONTOS FORTES (continuação)" na nova página
-          const iconX = leftMargin;
+          const iconX = leftMargin - 10; // Reduzindo 10 pixels também na continuação
           const iconY = doc.y + 10;
           
           // Adicionar ícone de escudo novamente
@@ -752,7 +770,7 @@ export class PdfService {
           doc.fontSize(14)
             .font(this.getFontBold())
             .fillColor(this.colors.primary)
-            .text('PONTOS FORTES (continuação)', leftMargin + bgSize + iconTextGap, doc.y)
+            .text('PONTOS FORTES (continuação)', iconX + bgSize + iconTextGap, doc.y)
             .moveDown(0.5);
           
           // Restaurar a formatação após o título na nova página
@@ -761,10 +779,10 @@ export class PdfService {
              .fillColor(this.colors.secondary);
         }
         
-        doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
+        doc.text('•', iconX + bgSize + iconTextGap, doc.y, { continued: true })
            .text(' ' + ponto, { 
              align: 'left',
-             width: pageWidth - (leftMargin + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
+             width: pageWidth - (iconX + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
            })
            .moveDown(0.5);
       });
@@ -783,7 +801,7 @@ export class PdfService {
       }
       
       // Coordenadas para o ícone - alinhado à margem esquerda
-      const iconX = leftMargin;
+      const iconX = leftMargin - 10; // Reduzindo 10 pixels
       const iconY = doc.y + 10;
       const iconSize = 20;
       const bgSize = iconSize + 10;
@@ -797,7 +815,7 @@ export class PdfService {
       doc.fontSize(14)
         .font(this.getFontBold())
         .fillColor(this.colors.primary) // Mudando para cor primária (azul)
-        .text('ÁREAS DE MELHORIA', leftMargin + bgSize + iconTextGap, doc.y)
+        .text('ÁREAS DE MELHORIA', iconX + bgSize + iconTextGap, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
@@ -816,18 +834,38 @@ export class PdfService {
           // Adicionar cabeçalho padrão na nova página se necessário
           if (mergedOptions.addHeaderOnNewPages !== false) {
             // Adicionar um cabeçalho para a nova página
-            const headerHeight = 30;
-            doc.fillColor(this.colors.primary)
-               .rect(0, 0, doc.page.width, headerHeight)
-               .fill();
+            const headerHeight = 50; // Altura ajustada para 50 (era 30)
+            doc.rect(0, 0, doc.page.width, headerHeight)
+               .fill('#1E2A4A');  // Azul escuro no topo da página (mesmo da primeira página)
             
-            // Logo ou texto no cabeçalho se necessário
-            if (mergedOptions.companyName) {
-              doc.fontSize(10)
-                 .font(this.getFontBold())
-                 .fillColor('white')
-                 .text(mergedOptions.companyName, 20, 10);
+            // Carregar logo da Singulari
+            const logoPath = path.join(this.assetsPath, 'logo', 'logo-singulari.png');
+            
+            // Verificar se a logo existe
+            if (fs.existsSync(logoPath)) {
+              // Dimensões da logo - reduzida em 25%
+              const logoHeight = 22.5; // 30 * 0.75 = 22.5
+              const logoWidth = 90; // 120 * 0.75 = 90
+              
+              // Posicionar a logo à direita no cabeçalho
+              const logoX = doc.page.width - logoWidth - 40;
+              // Ajustar para que a logo fique alinhada com o texto, mais abaixo
+              const alignedLogoY = 12; // Movido ainda mais para baixo (de 8 para 12)
+              
+              // Adicionar logo
+              doc.image(logoPath, logoX, alignedLogoY, { 
+                width: logoWidth,
+                height: logoHeight 
+              });
             }
+            
+            // Texto do cabeçalho
+            doc.fillColor(this.colors.white)
+               .fontSize(14)
+               .font(this.getFontBold())
+               .text('Diagnóstico', leftMargin, 18, { continued: true })
+               .font(this.getFontRegular())
+               .text(' | Relatório Completo', { align: 'left' });
             
             doc.moveDown(2);
           } else {
@@ -835,7 +873,7 @@ export class PdfService {
           }
           
           // Adicionar título "ÁREAS DE MELHORIA (continuação)" na nova página
-          const iconX = leftMargin;
+          const iconX = leftMargin - 10; // Reduzindo 10 pixels também na continuação
           const iconY = doc.y + 10;
           
           // Adicionar ícone de alvo novamente
@@ -845,7 +883,7 @@ export class PdfService {
           doc.fontSize(14)
             .font(this.getFontBold())
             .fillColor(this.colors.primary)
-            .text('ÁREAS DE MELHORIA (continuação)', leftMargin + bgSize + iconTextGap, doc.y)
+            .text('ÁREAS DE MELHORIA (continuação)', iconX + bgSize + iconTextGap, doc.y)
             .moveDown(0.5);
           
           // Restaurar a formatação após o título na nova página
@@ -854,10 +892,10 @@ export class PdfService {
              .fillColor(this.colors.secondary);
         }
         
-        doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
+        doc.text('•', iconX + bgSize + iconTextGap, doc.y, { continued: true })
            .text(' ' + area, { 
              align: 'left',
-             width: pageWidth - (leftMargin + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
+             width: pageWidth - (iconX + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
            })
            .moveDown(0.5);
       });
@@ -876,7 +914,7 @@ export class PdfService {
       }
       
       // Coordenadas para o ícone - alinhado à margem esquerda
-      const iconX = leftMargin;
+      const iconX = leftMargin - 10; // Reduzindo 10 pixels
       const iconY = doc.y + 10;
       const iconSize = 20;
       const bgSize = iconSize + 10;
@@ -890,7 +928,7 @@ export class PdfService {
       doc.fontSize(14)
         .font(this.getFontBold())
         .fillColor(this.colors.primary) // Mudando para cor primária (azul)
-        .text('RECOMENDAÇÕES', leftMargin + bgSize + iconTextGap, doc.y)
+        .text('RECOMENDAÇÕES', iconX + bgSize + iconTextGap, doc.y)
         .moveDown(0.5);
       
       // Adicionar itens como bullet points
@@ -909,18 +947,38 @@ export class PdfService {
           // Adicionar cabeçalho padrão na nova página se necessário
           if (mergedOptions.addHeaderOnNewPages !== false) {
             // Adicionar um cabeçalho para a nova página
-            const headerHeight = 30;
-            doc.fillColor(this.colors.primary)
-               .rect(0, 0, doc.page.width, headerHeight)
-               .fill();
+            const headerHeight = 50; // Altura ajustada para 50 (era 30)
+            doc.rect(0, 0, doc.page.width, headerHeight)
+               .fill('#1E2A4A');  // Azul escuro no topo da página (mesmo da primeira página)
             
-            // Logo ou texto no cabeçalho se necessário
-            if (mergedOptions.companyName) {
-              doc.fontSize(10)
-                 .font(this.getFontBold())
-                 .fillColor('white')
-                 .text(mergedOptions.companyName, 20, 10);
+            // Carregar logo da Singulari
+            const logoPath = path.join(this.assetsPath, 'logo', 'logo-singulari.png');
+            
+            // Verificar se a logo existe
+            if (fs.existsSync(logoPath)) {
+              // Dimensões da logo - reduzida em 25%
+              const logoHeight = 22.5; // 30 * 0.75 = 22.5
+              const logoWidth = 90; // 120 * 0.75 = 90
+              
+              // Posicionar a logo à direita no cabeçalho
+              const logoX = doc.page.width - logoWidth - 40;
+              // Ajustar para que a logo fique alinhada com o texto, mais abaixo
+              const alignedLogoY = 12; // Movido ainda mais para baixo (de 8 para 12)
+              
+              // Adicionar logo
+              doc.image(logoPath, logoX, alignedLogoY, { 
+                width: logoWidth,
+                height: logoHeight 
+              });
             }
+            
+            // Texto do cabeçalho
+            doc.fillColor(this.colors.white)
+               .fontSize(14)
+               .font(this.getFontBold())
+               .text('Diagnóstico', leftMargin, 18, { continued: true })
+               .font(this.getFontRegular())
+               .text(' | Relatório Completo', { align: 'left' });
             
             doc.moveDown(2);
           } else {
@@ -928,7 +986,7 @@ export class PdfService {
           }
           
           // Adicionar título "RECOMENDAÇÕES (continuação)" na nova página
-          const iconX = leftMargin;
+          const iconX = leftMargin - 10; // Reduzindo 10 pixels também na continuação
           const iconY = doc.y + 10;
           
           // Adicionar ícone de foguete novamente
@@ -938,7 +996,7 @@ export class PdfService {
           doc.fontSize(14)
             .font(this.getFontBold())
             .fillColor(this.colors.primary) // Mesma cor primária (azul)
-            .text('RECOMENDAÇÕES (continuação)', leftMargin + bgSize + iconTextGap, doc.y)
+            .text('RECOMENDAÇÕES (continuação)', iconX + bgSize + iconTextGap, doc.y)
             .moveDown(0.5);
           
           // Restaurar a formatação após o título na nova página
@@ -947,10 +1005,10 @@ export class PdfService {
              .fillColor(this.colors.secondary);
         }
         
-        doc.text('•', leftMargin + bgSize + iconTextGap, doc.y, { continued: true })
+        doc.text('•', iconX + bgSize + iconTextGap, doc.y, { continued: true })
            .text(' ' + recomendacao, { 
              align: 'left',
-             width: pageWidth - (leftMargin + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
+             width: pageWidth - (iconX + bgSize + iconTextGap + 20) // Ajustar largura adequadamente
            })
            .moveDown(0.5);
       });
