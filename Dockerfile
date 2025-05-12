@@ -1,4 +1,4 @@
-FROM node:16-alpine
+FROM node:20-alpine
 
 # Instalar dependências para o canvas
 RUN apk add --no-cache build-base g++ cairo-dev jpeg-dev pango-dev giflib-dev
