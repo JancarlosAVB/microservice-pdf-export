@@ -20,13 +20,16 @@ export class ChartService {
     canvas.width = width * 2; // Alta resolução
     canvas.height = height * 2; // Alta resolução
     
+    // Ajustar o contexto para escala 2x (alta resolução)
+    ctx.scale(2, 2);
+    
     // Determinar se é gráfico de IA ou Cultura sem depender do título
     const isIAChart = this.isIAChart(labels);
     
-    // Cores consistentes para cada tipo de gráfico
+    // Cores consistentes para cada tipo de gráfico - Aumento do contraste
     const chartColors = isIAChart ? 
-      { backgroundColor: 'rgba(54, 162, 235, 0.3)', borderColor: 'rgb(54, 162, 235)', pointColor: 'rgb(54, 162, 235)' } : 
-      { backgroundColor: 'rgba(255, 99, 132, 0.3)', borderColor: 'rgb(255, 99, 132)', pointColor: 'rgb(255, 99, 132)' };
+      { backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(54, 162, 235)', pointColor: 'rgb(32, 128, 204)' } : 
+      { backgroundColor: 'rgba(255, 99, 132, 0.2)', borderColor: 'rgb(255, 99, 132)', pointColor: 'rgb(220, 53, 89)' };
     
     // Processar dados de forma idêntica para ambos os gráficos
     const processedDatasets = datasets.map(dataset => {
@@ -47,21 +50,38 @@ export class ChartService {
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: chartColors.borderColor,
-        pointRadius: 6,
-        pointHoverRadius: 8
+        pointRadius: 7, // Aumento do tamanho dos pontos
+        pointHoverRadius: 9,
+        fill: true // Garantir preenchimento
       };
+    });
+    
+    // Encurtar os rótulos muito longos
+    const shortLabels = labels.map(label => {
+      if (label.length > 15) {
+        return label.substring(0, 12) + '...';
+      }
+      return label;
     });
     
     // Configurações melhoradas para exibir rótulos e valores
     const config: ChartConfiguration = {
       type: 'radar' as ChartType,
       data: {
-        labels: labels,
+        labels: shortLabels, // Usar rótulos encurtados
         datasets: processedDatasets,
       },
       options: {
         responsive: false, // Desabilitar responsividade para manter tamanho exato
         maintainAspectRatio: true, // Manter proporção
+        layout: {
+          padding: {
+            top: 20,
+            right: 20,
+            bottom: 20,
+            left: 20
+          }
+        },
         plugins: {
           title: {
             display: !!title,
@@ -88,7 +108,11 @@ export class ChartService {
               size: 14
             },
             padding: 10,
+            displayColors: true,
             callbacks: {
+              title: function(tooltipItems) {
+                return labels[tooltipItems[0].dataIndex]; // Usar rótulos originais no tooltip
+              },
               label: function(context) {
                 let label = context.dataset.label || '';
                 if (label) {
@@ -114,28 +138,59 @@ export class ChartService {
             },
             grid: {
               circular: true,
-              color: 'rgba(0, 0, 0, 0.2)'
+              color: 'rgba(0, 0, 0, 0.2)',
+              lineWidth: 1.5 // Linhas mais grossas para melhor visibilidade
             },
             pointLabels: {
               display: true,
               centerPointLabels: false,
               font: {
-                size: 14,
-                weight: 'bold'
+                size: 12, // Tamanho reduzido para evitar sobreposição
+                weight: 'bold',
+                family: 'Arial'
               },
-              color: '#333',
-              padding: 5
+              color: '#000', // Texto preto para maior contraste
+              padding: 10, // Mais espaço para os rótulos
+              callback: function(label) {
+                // Quebrar rótulos muito longos em múltiplas linhas
+                if (label.length > 12) {
+                  const words = label.split(' ');
+                  let lines = [];
+                  let currentLine = '';
+                  
+                  for (const word of words) {
+                    if ((currentLine + word).length <= 12) {
+                      currentLine += (currentLine ? ' ' : '') + word;
+                    } else {
+                      lines.push(currentLine);
+                      currentLine = word;
+                    }
+                  }
+                  
+                  if (currentLine) {
+                    lines.push(currentLine);
+                  }
+                  
+                  return lines;
+                }
+                return label;
+              }
             },
             ticks: {
               display: true,
               count: 5, // Exibir 5 linhas circulares (0, 1, 2, 3, 4)
               stepSize: 1,
               backdropColor: 'transparent',
-              color: '#333',
+              color: '#000000', // Texto preto para maior contraste
+              showLabelBackdrop: true, // Mostrar fundo nos valores
+              backdropPadding: 2,
+              backdropColor: 'rgba(255, 255, 255, 0.75)', // Fundo branco semi-transparente
               font: {
-                size: 12,
-                weight: 'bold'
+                size: 14, // Texto maior para valores
+                weight: 'bold',
+                family: 'Arial'
               },
+              z: 1, // Garantir que os ticks fiquem acima do gráfico
               // Mostrar valores numéricos (1-4) nos raios do gráfico
               callback: function(value) {
                 return value.toString();
@@ -145,13 +200,15 @@ export class ChartService {
         },
         elements: {
           line: {
-            tension: 0.1,
-            borderWidth: 2
+            tension: 0, // Linhas retas para radar (sem curvas)
+            borderWidth: 3, // Linhas mais grossas
+            borderCapStyle: 'round'
           },
           point: {
-            radius: 6,
-            hoverRadius: 8,
-            borderWidth: 2
+            radius: 7, // Pontos maiores
+            hoverRadius: 9,
+            borderWidth: 2,
+            hitRadius: 10 // Área de clique maior
           }
         }
       }
