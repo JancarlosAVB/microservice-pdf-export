@@ -24,8 +24,9 @@ export const config = {
   
   // Configurações de fila
   queue: {
-    concurrency: parseInt(process.env.QUEUE_CONCURRENCY || '10', 10),
-    limiterMax: parseInt(process.env.QUEUE_RATE_LIMIT_MAX || '60', 10),
+    concurrency: parseInt(process.env.QUEUE_CONCURRENCY || '30', 10),
+    limiterMax: parseInt(process.env.QUEUE_RATE_LIMIT_MAX || '100', 10),
     limiterDuration: parseInt(process.env.QUEUE_RATE_LIMIT_DURATION || '60000', 10), // 1 minuto
+    delayBetweenJobs: parseInt(process.env.QUEUE_DELAY_BETWEEN_JOBS || '500', 10), // 500ms entre jobs
   }
 }; 

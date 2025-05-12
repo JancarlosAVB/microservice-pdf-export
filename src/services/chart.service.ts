@@ -47,12 +47,12 @@ export class ChartService {
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: chartColors.borderColor,
-        pointRadius: 5,
-        pointHoverRadius: 7
+        pointRadius: 6,
+        pointHoverRadius: 8
       };
     });
     
-    // Configurações idênticas para ambos os tipos de gráfico
+    // Configurações melhoradas para exibir rótulos e valores
     const config: ChartConfiguration = {
       type: 'radar' as ChartType,
       data: {
@@ -67,12 +67,12 @@ export class ChartService {
             display: !!title,
             text: title,
             font: {
-              size: 14,
+              size: 18,
               weight: 'bold',
             },
             padding: {
               top: 10,
-              bottom: 10
+              bottom: 15
             }
           },
           legend: {
@@ -82,12 +82,24 @@ export class ChartService {
             enabled: true,
             backgroundColor: 'rgba(0,0,0,0.8)',
             titleFont: {
-              size: 12
+              size: 14
             },
             bodyFont: {
-              size: 12
+              size: 14
             },
-            padding: 8
+            padding: 10,
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (context.parsed.r !== null) {
+                  label += context.parsed.r;
+                }
+                return label;
+              }
+            }
           }
         },
         scales: {
@@ -95,52 +107,38 @@ export class ChartService {
             min: 0,
             max: 4,
             beginAtZero: true,
-            ticks: {
-              stepSize: 1,
-              backdropColor: 'transparent',
+            angleLines: {
+              display: true,
+              color: 'rgba(0, 0, 0, 0.3)',
+              lineWidth: 1
+            },
+            grid: {
+              circular: true,
+              color: 'rgba(0, 0, 0, 0.2)'
+            },
+            pointLabels: {
+              display: true,
+              centerPointLabels: false,
               font: {
                 size: 14,
                 weight: 'bold'
               },
               color: '#333',
+              padding: 5
             },
-            grid: {
-              color: 'rgba(0, 0, 0, 0.2)',
-              lineWidth: 1,
-              circular: true
-            },
-            angleLines: {
-              color: 'rgba(0, 0, 0, 0.2)',
-              lineWidth: 1
-            },
-            pointLabels: {
+            ticks: {
+              display: true,
+              count: 5, // Exibir 5 linhas circulares (0, 1, 2, 3, 4)
+              stepSize: 1,
+              backdropColor: 'transparent',
+              color: '#333',
               font: {
-                size: 14,
+                size: 12,
                 weight: 'bold'
               },
-              color: '#000000',
-              padding: 6,
-              // Melhorar apresentação de rótulos longos usando quebra de linha
-              callback: function(value: string) {
-                // Se o texto tiver mais de 15 caracteres, tentar quebrar em duas linhas
-                if (value.length > 15) {
-                  // Tentar encontrar um espaço para quebrar
-                  const middleIndex = Math.ceil(value.length / 2);
-                  let breakIndex = value.lastIndexOf(' ', middleIndex);
-                  
-                  // Se não encontrar espaço, quebrar no meio mesmo
-                  if (breakIndex === -1) {
-                    breakIndex = middleIndex;
-                  }
-                  
-                  const firstLine = value.substring(0, breakIndex);
-                  const secondLine = value.substring(breakIndex === middleIndex ? breakIndex : breakIndex + 1);
-                  
-                  return [firstLine, secondLine];
-                }
-                
-                // Se for curto, retornar o texto original
-                return value;
+              // Mostrar valores numéricos (1-4) nos raios do gráfico
+              callback: function(value) {
+                return value.toString();
               }
             }
           }
@@ -151,8 +149,8 @@ export class ChartService {
             borderWidth: 2
           },
           point: {
-            radius: 5,
-            hoverRadius: 7,
+            radius: 6,
+            hoverRadius: 8,
             borderWidth: 2
           }
         }
@@ -192,62 +190,64 @@ export class ChartService {
   }
 
   /**
-   * Determina se o gráfico é de IA ou Cultura com base nos rótulos
-   * @param labels Array de rótulos do gráfico
-   * @returns true se for gráfico de IA, false se for gráfico de Cultura
+   * Verifica se um gráfico é do tipo IA com base nos seus rótulos
+   * @param labels Rótulos do gráfico
+   * @returns true se for um gráfico de IA, false caso contrário
    */
   private isIAChart(labels: string[]): boolean {
-    // Palavras-chave associadas ao gráfico de IA
+    // Palavras-chave comuns em gráficos de IA
     const iaKeywords = [
-      'estratégia', 'estrat',
-      'processos', 'process',
-      'governança', 'governan',
-      'dados', 'data',
-      'tecnologia', 'tecnolog',
-      'infraestrutura', 'infra',
-      'automação', 'automa',
-      'inteligência', 'ia'
+      'IA', 'Uso', 'Abrangência', 'Desafios', 
+      'Integração', 'Estratégica', 'Avaliação'
     ];
     
-    // Palavras-chave associadas ao gráfico de Cultura
+    // Palavras-chave para cultura
     const culturaKeywords = [
-      'cultura', 'cultur',
-      'liderança', 'lideran',
-      'pessoas', 'colaborador',
-      'mudança', 'mudan',
-      'engajamento', 'engaja',
-      'adoção', 'adoc',
-      'resistência', 'resist',
-      'comunicação', 'comunica'
+      'Mudanças', 'Engajamento', 'Colaboração', 'Experimentação',
+      'Liderança', 'Comunicação', 'Feedback'
     ];
     
-    // Contar quantas palavras-chave de cada tipo aparecem nos rótulos
-    let iaKeywordCount = 0;
-    let culturaKeywordCount = 0;
+    // Verificar primeiro rótulo como heurística simples
+    if (labels && labels.length > 0) {
+      const firstLabel = labels[0].toLowerCase();
+      
+      // Se o primeiro label for "Uso de IA", é definitivamente IA
+      if (firstLabel.includes('uso') || firstLabel.includes('ia')) {
+        return true;
+      }
+      
+      // Se o primeiro label for "Mudanças", é definitivamente Cultura
+      if (firstLabel.includes('mudança') || firstLabel.includes('engajamento')) {
+        return false;
+      }
+    }
     
-    // Verificar cada rótulo
+    // Contagem de palavras-chave
+    let iaCount = 0;
+    let culturaCount = 0;
+    
+    // Verificar todos os rótulos
     for (const label of labels) {
       const lowerLabel = label.toLowerCase();
       
-      // Verificar palavras-chave de IA
+      // Contar palavras-chave de IA
       for (const keyword of iaKeywords) {
-        if (lowerLabel.includes(keyword)) {
-          iaKeywordCount++;
-          break; // Se encontrou uma keyword de IA neste rótulo, não precisa verificar as outras
+        if (lowerLabel.includes(keyword.toLowerCase())) {
+          iaCount++;
+          break;
         }
       }
       
-      // Verificar palavras-chave de Cultura
+      // Contar palavras-chave de Cultura
       for (const keyword of culturaKeywords) {
-        if (lowerLabel.includes(keyword)) {
-          culturaKeywordCount++;
-          break; // Se encontrou uma keyword de Cultura neste rótulo, não precisa verificar as outras
+        if (lowerLabel.includes(keyword.toLowerCase())) {
+          culturaCount++;
+          break;
         }
       }
     }
     
-    // Determinar o tipo de gráfico com base na contagem de palavras-chave
-    // Se houver mais palavras-chave de IA do que de Cultura, é um gráfico de IA
-    return iaKeywordCount >= culturaKeywordCount;
+    // Determinar pelo maior número de correspondências
+    return iaCount >= culturaCount;
   }
 } 

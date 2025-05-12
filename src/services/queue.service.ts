@@ -16,18 +16,24 @@ const defaultJobOptions: JobOptions = {
   },
   removeOnComplete: true,
   removeOnFail: false,
+  // Adicionar atraso inicial para todas as requisições
+  delay: 3000, // 3 segundos de atraso antes de iniciar o processamento
 };
 
 // Classe para gerenciar filas
 export class QueueService {
   private static instance: QueueService;
   private queues: Map<string, Queue> = new Map();
+  private processingJobs: number = 0;
 
   private constructor() {
     // Inicializar as filas
     Object.values(QueueType).forEach((queueName) => {
       this.createQueue(queueName);
     });
+    
+    // Configurar eventos para monitorar jobs ativos
+    this.setupQueueEvents();
   }
 
   // Singleton pattern
@@ -36,6 +42,32 @@ export class QueueService {
       QueueService.instance = new QueueService();
     }
     return QueueService.instance;
+  }
+
+  // Configurar eventos para monitorar fila
+  private setupQueueEvents(): void {
+    Object.values(QueueType).forEach((queueName) => {
+      const queue = this.queues.get(queueName);
+      if (queue) {
+        // Monitorar jobs ativos
+        queue.on('active', (job) => {
+          this.processingJobs++;
+          console.log(`Job ${job.id} ativo. Total de jobs processando: ${this.processingJobs}`);
+        });
+
+        // Monitorar jobs completos
+        queue.on('completed', (job) => {
+          this.processingJobs = Math.max(0, this.processingJobs - 1);
+          console.log(`Job ${job.id} concluído. Total de jobs processando: ${this.processingJobs}`);
+        });
+
+        // Monitorar jobs com falha
+        queue.on('failed', (job, error) => {
+          this.processingJobs = Math.max(0, this.processingJobs - 1);
+          console.log(`Job ${job.id} falhou: ${error.message}. Total de jobs processando: ${this.processingJobs}`);
+        });
+      }
+    });
   }
 
   // Criar uma nova fila
@@ -65,14 +97,31 @@ export class QueueService {
       throw new Error(`Fila "${queueName}" não encontrada`);
     }
 
-    const mergedOptions = { ...defaultJobOptions, ...options };
+    // Calcular atraso baseado na carga atual do sistema
+    const waitingCount = await queue.getWaitingCount();
+    const activeCount = await queue.getActiveCount();
+    const totalJobs = waitingCount + activeCount;
+    
+    // Atraso proporcional à quantidade de jobs na fila, com um mínimo de 3 segundos
+    const dynamicDelay = Math.max(
+      3000, // Mínimo de 3 segundos
+      totalJobs * config.queue.delayBetweenJobs // Adiciona mais tempo conforme a fila cresce
+    );
+
+    const mergedOptions = { 
+      ...defaultJobOptions,
+      ...options,
+      delay: options.delay || dynamicDelay
+    };
+    
     const job = await queue.add(data, mergedOptions);
     
-    console.log(`Job ${job.id} adicionado à fila "${queueName}"`);
+    console.log(`Job ${job.id} adicionado à fila "${queueName}" com ${totalJobs} jobs na fila. Atraso: ${mergedOptions.delay}ms`);
+    
     return job;
   }
 
-  // Processar jobs da fila
+  // Processar jobs da fila com atraso entre processamentos
   public processQueue<T, R>(
     queueName: QueueType,
     processor: (job: Bull.Job<T>) => Promise<R>
@@ -82,8 +131,25 @@ export class QueueService {
       throw new Error(`Fila "${queueName}" não encontrada`);
     }
 
-    queue.process(config.queue.concurrency, processor);
-    console.log(`Processador configurado para a fila "${queueName}" com concorrência ${config.queue.concurrency}`);
+    // Wrapper para adicionar atraso entre processamentos
+    const processorWithThrottle = async (job: Bull.Job<T>): Promise<R> => {
+      try {
+        const result = await processor(job);
+        
+        // Adicionar um pequeno atraso após processar cada job
+        if (config.queue.delayBetweenJobs > 0) {
+          await new Promise(resolve => setTimeout(resolve, config.queue.delayBetweenJobs));
+        }
+        
+        return result;
+      } catch (error) {
+        console.error(`Erro ao processar job ${job.id}:`, error);
+        throw error;
+      }
+    };
+
+    queue.process(config.queue.concurrency, processorWithThrottle);
+    console.log(`Processador configurado para a fila "${queueName}" com concorrência ${config.queue.concurrency} e atraso de ${config.queue.delayBetweenJobs}ms entre jobs`);
   }
 
   // Obter uma fila específica
@@ -109,6 +175,7 @@ export class QueueService {
         completed: await queue.getCompletedCount(),
         failed: await queue.getFailedCount(),
         delayed: await queue.getDelayedCount(),
+        processingNow: this.processingJobs
       };
     }
     
