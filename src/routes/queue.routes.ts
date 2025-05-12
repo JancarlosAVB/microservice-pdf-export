@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { QueueService } from '../services/queue.service';
+import { QueueService, QueueType } from '../services/queue.service';
 
 const router = Router();
 const queueService = QueueService.getInstance();
@@ -23,8 +23,8 @@ router.get('/stats', async (req, res) => {
   }
 });
 
-// Rota para limpar trabalhos em espera de uma fila específica
-router.delete('/:queueName/jobs/waiting', async (req, res) => {
+// Handler para limpar trabalhos em espera de uma fila específica
+const cleanJobs = async (req: any, res: any) => {
   try {
     const { queueName } = req.params;
     const queue = queueService.getQueue(queueName as any);
@@ -38,23 +38,23 @@ router.delete('/:queueName/jobs/waiting', async (req, res) => {
     
     await queue.empty();
     
-    res.json({
+    return res.json({
       success: true,
       message: `Trabalhos em espera na fila '${queueName}' removidos`,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error(`Erro ao limpar fila '${req.params.queueName}':`, error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: `Falha ao limpar fila '${req.params.queueName}'`,
       details: error instanceof Error ? error.message : 'Erro desconhecido'
     });
   }
-});
+};
 
-// Rota para obter detalhes de um job específico
-router.get('/:queueName/jobs/:jobId', async (req, res) => {
+// Handler para obter detalhes de um job específico
+const getJobDetails = async (req: any, res: any) => {
   try {
     const { queueName, jobId } = req.params;
     const queue = queueService.getQueue(queueName as any);
@@ -78,7 +78,7 @@ router.get('/:queueName/jobs/:jobId', async (req, res) => {
     // Obtém detalhes do job
     const state = await job.getState();
     
-    res.json({
+    return res.json({
       success: true,
       data: {
         id: job.id,
@@ -96,12 +96,16 @@ router.get('/:queueName/jobs/:jobId', async (req, res) => {
     });
   } catch (error) {
     console.error(`Erro ao obter job '${req.params.jobId}':`, error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       error: `Falha ao obter job '${req.params.jobId}'`,
       details: error instanceof Error ? error.message : 'Erro desconhecido'
     });
   }
-});
+};
+
+// Aplicar os handlers às rotas
+router.delete('/:queueName/jobs/waiting', cleanJobs);
+router.get('/:queueName/jobs/:jobId', getJobDetails);
 
 export default router; 

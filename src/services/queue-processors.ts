@@ -120,7 +120,7 @@ export function setupQueueProcessors(queueService: QueueService): void {
           setHeader: () => {},
         } as any;
 
-        chartController.generateRadarChart(req, res)
+        chartController.generateRadarChartPdf(req, res)
           .catch(reject);
       });
 
