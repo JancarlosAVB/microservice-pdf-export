@@ -1,6 +1,8 @@
 import { Canvas, CanvasRenderingContext2D } from 'canvas';
 import { Chart, ChartConfiguration, ChartType, RadarController, LineElement, PointElement, RadialLinearScale, Tooltip, Legend, Filler } from 'chart.js';
 import { RadarChartData } from '../interfaces/chart.interface';
+import path from 'path';
+import fs from 'fs';
 
 // Registrar os componentes necessários do Chart.js
 Chart.register(RadarController, LineElement, PointElement, RadialLinearScale, Tooltip, Legend, Filler);
@@ -23,12 +25,11 @@ export class ChartService {
     // Ajustar o contexto para escala 2x (alta resolução)
     ctx.scale(2, 2);
     
-    // Configurar fonte para suportar caracteres especiais
-    ctx.font = '12px sans-serif';
-    ctx.textBaseline = 'middle';
-    
     // Determinar se é gráfico de IA ou Cultura sem depender do título
     const isIAChart = this.isIAChart(labels);
+    
+    // Mapear rótulos para versões ASCII seguras
+    const safeLabels = this.createSafeLabels(labels, isIAChart);
     
     // Cores consistentes para cada tipo de gráfico
     const chartColors = isIAChart ? 
@@ -60,43 +61,12 @@ export class ChartService {
       };
     });
     
-    // Verificar se há rótulos não-ASCII e substituir por alternativas simples
-    const sanitizedLabels = labels.map(label => {
-      // Se temos caracteres não-ASCII
-      if (/[^\u0000-\u007f]/.test(label)) {
-        // Mapear rótulos comuns para versões ASCII
-        if (label.includes('Utilização')) return 'Utilizacao';
-        if (label.includes('Abrangência')) return 'Abrangencia';
-        if (label.includes('Identificação')) return 'Identificacao';
-        if (label.includes('Mensuração')) return 'Mensuracao';
-        if (label.includes('Avaliação')) return 'Avaliacao';
-        if (label.includes('Integração')) return 'Integracao';
-        if (label.includes('Capacitação')) return 'Capacitacao';
-        if (label.includes('Mudanças')) return 'Mudancas';
-        if (label.includes('Comunicação')) return 'Comunicacao';
-        if (label.includes('Colaboração')) return 'Colaboracao';
-        if (label.includes('Experimentação')) return 'Experimentacao';
-        if (label.includes('Inovação')) return 'Inovacao';
-        
-        // Remover acentos e caracteres especiais como fallback
-        return label.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-      }
-      return label;
-    });
-    
-    // Encurtar os rótulos muito longos
-    const shortLabels = sanitizedLabels.map(label => {
-      if (label.length > 15) {
-        return label.substring(0, 12) + '...';
-      }
-      return label;
-    });
-    
     // Configurações melhoradas para exibir rótulos e valores
     const config: ChartConfiguration = {
       type: 'radar' as ChartType,
       data: {
-        labels: shortLabels,
+        // Usar rótulos vazios para evitar caracteres estranhos
+        labels: safeLabels,
         datasets: processedDatasets,
       },
       options: {
@@ -104,10 +74,10 @@ export class ChartService {
         maintainAspectRatio: true,
         layout: {
           padding: {
-            top: 20,
-            right: 20,
-            bottom: 20,
-            left: 20
+            top: 30,
+            right: 30,
+            bottom: 30,
+            left: 30
           }
         },
         plugins: {
@@ -142,7 +112,7 @@ export class ChartService {
             displayColors: true,
             callbacks: {
               title: function(tooltipItems) {
-                return sanitizedLabels[tooltipItems[0].dataIndex];
+                return safeLabels[tooltipItems[0].dataIndex];
               },
               label: function(context) {
                 let label = context.dataset.label || '';
@@ -178,31 +148,12 @@ export class ChartService {
               font: {
                 size: 12,
                 weight: 'bold',
-                family: 'sans-serif'
+                family: 'monospace' // Usar fonte monospace para maior compatibilidade
               },
               color: '#000',
               padding: 10,
+              // Usar rótulos curtos e ASCII-safe
               callback: function(label) {
-                if (label.length > 12) {
-                  const words = label.split(' ');
-                  let lines = [];
-                  let currentLine = '';
-                  
-                  for (const word of words) {
-                    if ((currentLine + word).length <= 12) {
-                      currentLine += (currentLine ? ' ' : '') + word;
-                    } else {
-                      lines.push(currentLine);
-                      currentLine = word;
-                    }
-                  }
-                  
-                  if (currentLine) {
-                    lines.push(currentLine);
-                  }
-                  
-                  return lines;
-                }
                 return label;
               }
             },
@@ -217,7 +168,7 @@ export class ChartService {
               font: {
                 size: 14,
                 weight: 'bold',
-                family: 'sans-serif'
+                family: 'monospace' // Usar fonte monospace para maior compatibilidade
               },
               z: 1,
               callback: function(value) {
@@ -243,7 +194,92 @@ export class ChartService {
     };
 
     // Criar o gráfico
-    return new Chart(ctx as any, config);
+    const chart = new Chart(ctx as any, config);
+    
+    // Adicionar função de renderização personalizada para desenhar rótulos manualmente
+    const originalDraw = chart.draw;
+    chart.draw = function() {
+      originalDraw.apply(this, arguments);
+      
+      // Desenhar rótulos personalizados após o gráfico ser renderizado
+      const scale = this.scales.r;
+      if (!scale) return;
+      
+      const centerX = scale.xCenter;
+      const centerY = scale.yCenter;
+      const maxRadius = scale.drawingArea;
+      
+      ctx.save();
+      ctx.font = 'bold 12px monospace';
+      ctx.fillStyle = '#000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      
+      // Desenhar cada rótulo manualmente
+      for (let i = 0; i < safeLabels.length; i++) {
+        // Calcular ângulo e posição
+        const angleRad = scale.getIndexAngle(i);
+        const labelRadius = maxRadius + 20;
+        const x = centerX + Math.cos(angleRad) * labelRadius;
+        const y = centerY + Math.sin(angleRad) * labelRadius;
+        
+        // Garantir que o texto esteja orientado corretamente
+        ctx.save();
+        ctx.translate(x, y);
+        
+        // Ajustar a orientação do texto
+        let rotationAngle = angleRad;
+        if (angleRad > Math.PI / 2 && angleRad < Math.PI * 1.5) {
+          rotationAngle += Math.PI;
+        }
+        
+        ctx.rotate(rotationAngle);
+        
+        // Desenhar o texto
+        ctx.fillText(safeLabels[i], 0, 0);
+        
+        ctx.restore();
+      }
+      
+      ctx.restore();
+    };
+    
+    return chart;
+  }
+
+  /**
+   * Cria rótulos seguros sem caracteres especiais
+   */
+  private createSafeLabels(labels: string[], isIAChart: boolean): string[] {
+    // Se for um gráfico de IA, usar rótulos padrão de IA
+    if (isIAChart) {
+      return [
+        "Uso IA",
+        "Abrangencia",
+        "Desafios",
+        "Beneficios",
+        "Avaliacao",
+        "Escalabilidade",
+        "Integracao",
+        "Capacitacao",
+        "Investimento",
+        "Visao"
+      ].slice(0, labels.length);
+    } else {
+      // Se for um gráfico de Cultura
+      return [
+        "Mudancas",
+        "Colaboracao",
+        "Ambiente",
+        "Experimentacao",
+        "Lideranca",
+        "Comunicacao",
+        "Tecnologia",
+        "Iniciativas",
+        "Feedback",
+        "Estrategia"
+      ].slice(0, labels.length);
+    }
   }
 
   /**
