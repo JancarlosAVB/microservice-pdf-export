@@ -23,10 +23,14 @@ export class ChartService {
     // Ajustar o contexto para escala 2x (alta resolução)
     ctx.scale(2, 2);
     
+    // Configurar fonte para suportar caracteres especiais
+    ctx.font = '12px sans-serif';
+    ctx.textBaseline = 'middle';
+    
     // Determinar se é gráfico de IA ou Cultura sem depender do título
     const isIAChart = this.isIAChart(labels);
     
-    // Cores consistentes para cada tipo de gráfico - Aumento do contraste
+    // Cores consistentes para cada tipo de gráfico
     const chartColors = isIAChart ? 
       { backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(54, 162, 235)', pointColor: 'rgb(32, 128, 204)' } : 
       { backgroundColor: 'rgba(255, 99, 132, 0.2)', borderColor: 'rgb(255, 99, 132)', pointColor: 'rgb(220, 53, 89)' };
@@ -50,14 +54,38 @@ export class ChartService {
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: chartColors.borderColor,
-        pointRadius: 7, // Aumento do tamanho dos pontos
+        pointRadius: 7, 
         pointHoverRadius: 9,
-        fill: true // Garantir preenchimento
+        fill: true
       };
     });
     
+    // Verificar se há rótulos não-ASCII e substituir por alternativas simples
+    const sanitizedLabels = labels.map(label => {
+      // Se temos caracteres não-ASCII
+      if (/[^\u0000-\u007f]/.test(label)) {
+        // Mapear rótulos comuns para versões ASCII
+        if (label.includes('Utilização')) return 'Utilizacao';
+        if (label.includes('Abrangência')) return 'Abrangencia';
+        if (label.includes('Identificação')) return 'Identificacao';
+        if (label.includes('Mensuração')) return 'Mensuracao';
+        if (label.includes('Avaliação')) return 'Avaliacao';
+        if (label.includes('Integração')) return 'Integracao';
+        if (label.includes('Capacitação')) return 'Capacitacao';
+        if (label.includes('Mudanças')) return 'Mudancas';
+        if (label.includes('Comunicação')) return 'Comunicacao';
+        if (label.includes('Colaboração')) return 'Colaboracao';
+        if (label.includes('Experimentação')) return 'Experimentacao';
+        if (label.includes('Inovação')) return 'Inovacao';
+        
+        // Remover acentos e caracteres especiais como fallback
+        return label.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+      }
+      return label;
+    });
+    
     // Encurtar os rótulos muito longos
-    const shortLabels = labels.map(label => {
+    const shortLabels = sanitizedLabels.map(label => {
       if (label.length > 15) {
         return label.substring(0, 12) + '...';
       }
@@ -68,12 +96,12 @@ export class ChartService {
     const config: ChartConfiguration = {
       type: 'radar' as ChartType,
       data: {
-        labels: shortLabels, // Usar rótulos encurtados
+        labels: shortLabels,
         datasets: processedDatasets,
       },
       options: {
-        responsive: false, // Desabilitar responsividade para manter tamanho exato
-        maintainAspectRatio: true, // Manter proporção
+        responsive: false,
+        maintainAspectRatio: true,
         layout: {
           padding: {
             top: 20,
@@ -89,6 +117,7 @@ export class ChartService {
             font: {
               size: 18,
               weight: 'bold',
+              family: 'sans-serif'
             },
             padding: {
               top: 10,
@@ -96,22 +125,24 @@ export class ChartService {
             }
           },
           legend: {
-            display: false, // Ocultar legenda para ambos os gráficos
+            display: false,
           },
           tooltip: {
             enabled: true,
             backgroundColor: 'rgba(0,0,0,0.8)',
             titleFont: {
-              size: 14
+              size: 14,
+              family: 'sans-serif'
             },
             bodyFont: {
-              size: 14
+              size: 14,
+              family: 'sans-serif'
             },
             padding: 10,
             displayColors: true,
             callbacks: {
               title: function(tooltipItems) {
-                return labels[tooltipItems[0].dataIndex]; // Usar rótulos originais no tooltip
+                return sanitizedLabels[tooltipItems[0].dataIndex];
               },
               label: function(context) {
                 let label = context.dataset.label || '';
@@ -139,20 +170,19 @@ export class ChartService {
             grid: {
               circular: true,
               color: 'rgba(0, 0, 0, 0.2)',
-              lineWidth: 1.5 // Linhas mais grossas para melhor visibilidade
+              lineWidth: 1.5
             },
             pointLabels: {
               display: true,
               centerPointLabels: false,
               font: {
-                size: 12, // Tamanho reduzido para evitar sobreposição
+                size: 12,
                 weight: 'bold',
-                family: 'Arial'
+                family: 'sans-serif'
               },
-              color: '#000', // Texto preto para maior contraste
-              padding: 10, // Mais espaço para os rótulos
+              color: '#000',
+              padding: 10,
               callback: function(label) {
-                // Quebrar rótulos muito longos em múltiplas linhas
                 if (label.length > 12) {
                   const words = label.split(' ');
                   let lines = [];
@@ -178,20 +208,18 @@ export class ChartService {
             },
             ticks: {
               display: true,
-              count: 5, // Exibir 5 linhas circulares (0, 1, 2, 3, 4)
+              count: 5,
               stepSize: 1,
-              backdropColor: 'transparent',
-              color: '#000000', // Texto preto para maior contraste
-              showLabelBackdrop: true, // Mostrar fundo nos valores
+              color: '#000000',
+              showLabelBackdrop: true,
               backdropPadding: 2,
-              backdropColor: 'rgba(255, 255, 255, 0.75)', // Fundo branco semi-transparente
+              backdropColor: 'rgba(255, 255, 255, 0.75)',
               font: {
-                size: 14, // Texto maior para valores
+                size: 14,
                 weight: 'bold',
-                family: 'Arial'
+                family: 'sans-serif'
               },
-              z: 1, // Garantir que os ticks fiquem acima do gráfico
-              // Mostrar valores numéricos (1-4) nos raios do gráfico
+              z: 1,
               callback: function(value) {
                 return value.toString();
               }
@@ -200,15 +228,15 @@ export class ChartService {
         },
         elements: {
           line: {
-            tension: 0, // Linhas retas para radar (sem curvas)
-            borderWidth: 3, // Linhas mais grossas
+            tension: 0,
+            borderWidth: 3,
             borderCapStyle: 'round'
           },
           point: {
-            radius: 7, // Pontos maiores
+            radius: 7,
             hoverRadius: 9,
             borderWidth: 2,
-            hitRadius: 10 // Área de clique maior
+            hitRadius: 10
           }
         }
       }
