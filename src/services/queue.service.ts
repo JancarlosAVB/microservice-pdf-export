@@ -9,15 +9,15 @@ export enum QueueType {
 
 // Opções padrão para os jobs
 const defaultJobOptions: JobOptions = {
-  attempts: 3,
+  attempts: 10,
   backoff: {
     type: 'exponential',
-    delay: 1000,
+    delay: 2000,
   },
   removeOnComplete: true,
   removeOnFail: false,
   // Adicionar atraso inicial para todas as requisições
-  delay: 3000, // 3 segundos de atraso antes de iniciar o processamento
+  delay: 5000, // 5 segundos de atraso antes de iniciar o processamento
 };
 
 // Classe para gerenciar filas
@@ -104,8 +104,8 @@ export class QueueService {
     
     // Atraso proporcional à quantidade de jobs na fila, com um mínimo de 3 segundos
     const dynamicDelay = Math.max(
-      3000, // Mínimo de 3 segundos
-      totalJobs * config.queue.delayBetweenJobs // Adiciona mais tempo conforme a fila cresce
+      5000, // Mínimo de 5 segundos (aumentado para servidor com 8GB RAM)
+      totalJobs * config.queue.delayBetweenJobs * 2 // Duplicando o fator de multiplicação
     );
 
     const mergedOptions = { 

@@ -230,31 +230,31 @@ export class ChartService {
   private getIALegend(): string[] {
     return [
       "Uso de IA",
-      "Abrangencia",
+      "Abrangência",
       "Desafios",
-      "Beneficios",
-      "Avaliacao de tecnologias",
+      "Benefícios",
+      "Avaliação de tecnologias",
       "Escalabilidade",
-      "Integracao com processos",
-      "Capacitacao",
+      "Integração com processos",
+      "Capacitação",
       "Investimento",
-      "Visao estrategica"
+      "Visão estratégica"
     ];
   }
 
   // Nomes completos para Cultura
   private getCulturaLegend(): string[] {
     return [
-      "Mudancas",
+      "Mudanças",
       "Engajamento",
-      "Colaboracao",
-      "Experimentacao",
-      "Lideranca",
-      "Comunicacao",
-      "Capacitacao",
+      "Colaboração",
+      "Experimentação",
+      "Liderança",
+      "Comunicação",
+      "Capacitação",
       "Reconhecimento",
       "Cultura de feedback",
-      "Alinhamento estrategico"
+      "Alinhamento estratégico"
     ];
   }
 
@@ -262,28 +262,28 @@ export class ChartService {
   private getShortLabels(isIAChart: boolean, length: number): string[] {
     const iaLabels = [
       "Uso de IA",
-      "Abrangencia",
+      "Abrangência",
       "Desafios",
-      "Beneficios",
-      "Avaliacao de\ntecnologias",
+      "Benefícios",
+      "Avaliação de\ntecnologias",
       "Escalabilidade",
-      "Integracao com\nprocessos",
-      "Capacitacao",
+      "Integração com\nprocessos",
+      "Capacitação",
       "Investimento",
-      "Visao\nestrategica"
+      "Visão\nestratégica"
     ];
     
     const culturaLabels = [
-      "Mudancas",
+      "Mudanças",
       "Engajamento",
-      "Colaboracao",
-      "Experimentacao",
-      "Lideranca",
-      "Comunicacao",
-      "Capacitacao",
+      "Colaboração",
+      "Experimentação",
+      "Liderança",
+      "Comunicação",
+      "Capacitação",
       "Reconhecimento",
       "Cultura de\nfeedback",
-      "Alinhamento\nestrategico"
+      "Alinhamento\nestratégico"
     ];
     
     return (isIAChart ? iaLabels : culturaLabels).slice(0, length);
