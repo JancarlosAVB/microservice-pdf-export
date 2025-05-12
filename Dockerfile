@@ -1,10 +1,12 @@
 FROM node:20-alpine
 
-# Instalar dependências para o canvas e fontes
-RUN apk add --no-cache build-base g++ cairo-dev jpeg-dev pango-dev giflib-dev freetype-dev fontconfig ttf-dejavu ttf-liberation ttf-ubuntu-font-family msttcorefonts-installer
+# Instalar dependências para o canvas e fontes básicas
+RUN apk add --no-cache build-base g++ cairo-dev jpeg-dev pango-dev giflib-dev freetype-dev fontconfig ttf-dejavu ttf-liberation font-noto font-noto-cjk font-noto-extra
 
-# Instalar fontes Microsoft
-RUN update-ms-fonts && fc-cache -f
+# Criar diretório para fontes e definir variáveis de ambiente para fontes
+RUN mkdir -p /usr/share/fonts/truetype && \
+    echo "Setting font config" && \
+    fc-cache -f -v
 
 WORKDIR /app
 

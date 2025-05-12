@@ -8,6 +8,11 @@ import fs from 'fs';
 Chart.register(RadarController, LineElement, PointElement, RadialLinearScale, Tooltip, Legend, Filler);
 
 export class ChartService {
+  constructor() {
+    // Garantir que a fonte monospace seja usada mesmo se houver problemas com fontes no sistema
+    Chart.defaults.font.family = 'monospace';
+  }
+
   /**
    * Gera um gráfico radar no canvas fornecido
    * @param canvas Canvas onde o gráfico será desenhado
