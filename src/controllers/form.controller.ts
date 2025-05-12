@@ -134,16 +134,11 @@ export class FormController {
                 
                 // Verificar se devemos usar o sistema de filas
                 if (useQueue === true) {
-                    // Obter URL de callback e statusUpdateUrl dos parâmetros da requisição
-                    const callbackUrl = req.body.callbackUrl || null;
-                    const statusUpdateUrl = req.body.statusUpdateUrl || null;
-                    
                     // Adicionar o job à fila
                     const job = await this.queueService.addJob(QueueType.PDF_GENERATION, {
                         formData,
                         ...pdfRequestData,
-                        callbackUrl,
-                        statusUpdateUrl
+                        callbackUrl: req.body.callbackUrl || null
                     });
                     
                     return res.status(202).json({
