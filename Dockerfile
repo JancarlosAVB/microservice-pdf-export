@@ -1,7 +1,10 @@
 FROM node:20-alpine
 
-# Instalar dependências para o canvas
-RUN apk add --no-cache build-base g++ cairo-dev jpeg-dev pango-dev giflib-dev
+# Instalar dependências para o canvas e fontes
+RUN apk add --no-cache build-base g++ cairo-dev jpeg-dev pango-dev giflib-dev freetype-dev fontconfig ttf-dejavu ttf-liberation ttf-ubuntu-font-family msttcorefonts-installer
+
+# Instalar fontes Microsoft
+RUN update-ms-fonts && fc-cache -f
 
 WORKDIR /app
 

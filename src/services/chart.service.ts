@@ -28,13 +28,10 @@ export class ChartService {
     // Determinar se é gráfico de IA ou Cultura sem depender do título
     const isIAChart = this.isIAChart(labels);
     
-    // Mapear rótulos para versões ASCII seguras
-    const safeLabels = this.createSafeLabels(labels, isIAChart);
-    
     // Cores consistentes para cada tipo de gráfico
     const chartColors = isIAChart ? 
-      { backgroundColor: 'rgba(54, 162, 235, 0.2)', borderColor: 'rgb(54, 162, 235)', pointColor: 'rgb(32, 128, 204)' } : 
-      { backgroundColor: 'rgba(255, 99, 132, 0.2)', borderColor: 'rgb(255, 99, 132)', pointColor: 'rgb(220, 53, 89)' };
+      { backgroundColor: 'rgba(54, 162, 235, 0.4)', borderColor: 'rgb(54, 162, 235)', pointColor: 'rgb(32, 128, 204)' } : 
+      { backgroundColor: 'rgba(255, 99, 132, 0.4)', borderColor: 'rgb(255, 99, 132)', pointColor: 'rgb(220, 53, 89)' };
     
     // Processar dados de forma idêntica para ambos os gráficos
     const processedDatasets = datasets.map(dataset => {
@@ -55,18 +52,20 @@ export class ChartService {
         pointBorderColor: '#fff',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: chartColors.borderColor,
-        pointRadius: 7, 
-        pointHoverRadius: 9,
+        pointRadius: 8, 
+        pointHoverRadius: 10,
         fill: true
       };
     });
     
-    // Configurações melhoradas para exibir rótulos e valores
+    // Usar números para os rótulos para evitar problemas de caracteres
+    const numericLabels = Array.from({ length: labels.length }, (_, i) => (i + 1).toString());
+    
+    // Configurações do gráfico com abordagem simplificada
     const config: ChartConfiguration = {
       type: 'radar' as ChartType,
       data: {
-        // Usar rótulos vazios para evitar caracteres estranhos
-        labels: safeLabels,
+        labels: numericLabels, // Usar números como rótulos - solução definitiva para o problema de caracteres
         datasets: processedDatasets,
       },
       options: {
@@ -81,19 +80,6 @@ export class ChartService {
           }
         },
         plugins: {
-          title: {
-            display: !!title,
-            text: title,
-            font: {
-              size: 18,
-              weight: 'bold',
-              family: 'sans-serif'
-            },
-            padding: {
-              top: 10,
-              bottom: 15
-            }
-          },
           legend: {
             display: false,
           },
@@ -102,17 +88,18 @@ export class ChartService {
             backgroundColor: 'rgba(0,0,0,0.8)',
             titleFont: {
               size: 14,
-              family: 'sans-serif'
+              family: 'monospace'
             },
             bodyFont: {
               size: 14,
-              family: 'sans-serif'
+              family: 'monospace'
             },
             padding: 10,
             displayColors: true,
             callbacks: {
               title: function(tooltipItems) {
-                return safeLabels[tooltipItems[0].dataIndex];
+                const index = parseInt(tooltipItems[0].label) - 1;
+                return `Item ${index + 1}`;
               },
               label: function(context) {
                 let label = context.dataset.label || '';
@@ -146,16 +133,12 @@ export class ChartService {
               display: true,
               centerPointLabels: false,
               font: {
-                size: 12,
+                size: 16,
                 weight: 'bold',
-                family: 'monospace' // Usar fonte monospace para maior compatibilidade
+                family: 'monospace'
               },
               color: '#000',
               padding: 10,
-              // Usar rótulos curtos e ASCII-safe
-              callback: function(label) {
-                return label;
-              }
             },
             ticks: {
               display: true,
@@ -168,12 +151,9 @@ export class ChartService {
               font: {
                 size: 14,
                 weight: 'bold',
-                family: 'monospace' // Usar fonte monospace para maior compatibilidade
+                family: 'monospace'
               },
-              z: 1,
-              callback: function(value) {
-                return value.toString();
-              }
+              z: 1
             }
           }
         },
@@ -196,90 +176,72 @@ export class ChartService {
     // Criar o gráfico
     const chart = new Chart(ctx as any, config);
     
-    // Adicionar função de renderização personalizada para desenhar rótulos manualmente
-    const originalDraw = chart.draw;
+    // Adicionar legenda na parte inferior do gráfico com rótulos reais
     chart.draw = function() {
-      originalDraw.apply(this, arguments);
+      // Chamar a função original de desenho
+      Chart.prototype.draw.apply(this, arguments);
       
-      // Desenhar rótulos personalizados após o gráfico ser renderizado
-      const scale = this.scales.r;
-      if (!scale) return;
-      
-      const centerX = scale.xCenter;
-      const centerY = scale.yCenter;
-      const maxRadius = scale.drawingArea;
+      // Desenhar legenda manual
+      const legendY = height - 30;
+      const legendX = 50;
       
       ctx.save();
-      ctx.font = 'bold 12px monospace';
+      ctx.font = '14px monospace';
       ctx.fillStyle = '#000';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
       
-      // Desenhar cada rótulo manualmente
-      for (let i = 0; i < safeLabels.length; i++) {
-        // Calcular ângulo e posição
-        const angleRad = scale.getIndexAngle(i);
-        const labelRadius = maxRadius + 20;
-        const x = centerX + Math.cos(angleRad) * labelRadius;
-        const y = centerY + Math.sin(angleRad) * labelRadius;
+      ctx.fillText('Legenda:', legendX, legendY);
+      
+      // Determinar quais rótulos mostrar (IA ou Cultura)
+      const legendTexts = isIAChart ? this.getIALegend() : this.getCulturaLegend();
+      
+      // Posicionar abaixo do gráfico
+      for (let i = 0; i < numericLabels.length; i++) {
+        const labelText = `${numericLabels[i]}: ${legendTexts[i] || `Item ${i+1}`}`;
+        const colIndex = i % 2;
+        const rowIndex = Math.floor(i / 2);
         
-        // Garantir que o texto esteja orientado corretamente
-        ctx.save();
-        ctx.translate(x, y);
+        const x = legendX + (colIndex * 200);
+        const y = legendY + 25 + (rowIndex * 20);
         
-        // Ajustar a orientação do texto
-        let rotationAngle = angleRad;
-        if (angleRad > Math.PI / 2 && angleRad < Math.PI * 1.5) {
-          rotationAngle += Math.PI;
-        }
-        
-        ctx.rotate(rotationAngle);
-        
-        // Desenhar o texto
-        ctx.fillText(safeLabels[i], 0, 0);
-        
-        ctx.restore();
+        ctx.fillText(labelText, x, y);
       }
       
       ctx.restore();
-    };
+    }.bind({
+      ...chart,
+      getIALegend: function() {
+        return [
+          "Uso de IA",
+          "Abrangencia",
+          "Desafios",
+          "Beneficios",
+          "Avaliacao",
+          "Escalabilidade",
+          "Integracao",
+          "Capacitacao",
+          "Investimento",
+          "Visao Estrategica"
+        ];
+      },
+      getCulturaLegend: function() {
+        return [
+          "Mudancas",
+          "Colaboracao",
+          "Ambiente",
+          "Experimentacao",
+          "Lideranca",
+          "Comunicacao",
+          "Tecnologia",
+          "Iniciativas",
+          "Feedback",
+          "Estrategia"
+        ];
+      }
+    });
     
     return chart;
-  }
-
-  /**
-   * Cria rótulos seguros sem caracteres especiais
-   */
-  private createSafeLabels(labels: string[], isIAChart: boolean): string[] {
-    // Se for um gráfico de IA, usar rótulos padrão de IA
-    if (isIAChart) {
-      return [
-        "Uso IA",
-        "Abrangencia",
-        "Desafios",
-        "Beneficios",
-        "Avaliacao",
-        "Escalabilidade",
-        "Integracao",
-        "Capacitacao",
-        "Investimento",
-        "Visao"
-      ].slice(0, labels.length);
-    } else {
-      // Se for um gráfico de Cultura
-      return [
-        "Mudancas",
-        "Colaboracao",
-        "Ambiente",
-        "Experimentacao",
-        "Lideranca",
-        "Comunicacao",
-        "Tecnologia",
-        "Iniciativas",
-        "Feedback",
-        "Estrategia"
-      ].slice(0, labels.length);
-    }
   }
 
   /**
