@@ -140,19 +140,23 @@ export class ChartService {
               display: true,
               centerPointLabels: false,
               font: {
-                size: 12,  // Reduzido para evitar sobreposição
+                size: 14,  // Aumentado para melhor legibilidade
                 weight: 'bold',
                 family: 'monospace'
               },
               color: '#000',
-              padding: 10,
+              padding: 15,  // Aumentado para dar mais espaço
+              callback: function(value) {
+                // Permite quebras de linha com o caractere \n
+                return value;
+              }
             },
             ticks: {
               display: true,
               count: 5,
               stepSize: 1,
               color: '#000000',
-              showLabelBackdrop: true,
+              showLabelBackdrop: false,
               backdropPadding: 2,
               backdropColor: 'rgba(255, 255, 255, 0.75)',
               font: {
@@ -229,12 +233,12 @@ export class ChartService {
       "Abrangencia",
       "Desafios",
       "Beneficios",
-      "Avaliacao",
+      "Avaliacao de tecnologias",
       "Escalabilidade",
-      "Integracao",
+      "Integracao com processos",
       "Capacitacao",
       "Investimento",
-      "Visao Estrategica"
+      "Visao estrategica"
     ];
   }
 
@@ -242,47 +246,47 @@ export class ChartService {
   private getCulturaLegend(): string[] {
     return [
       "Mudancas",
+      "Engajamento",
       "Colaboracao",
-      "Ambiente",
       "Experimentacao",
       "Lideranca",
       "Comunicacao",
-      "Tecnologia",
-      "Iniciativas",
-      "Feedback",
-      "Estrategia"
+      "Capacitacao",
+      "Reconhecimento",
+      "Cultura de feedback",
+      "Alinhamento estrategico"
     ];
   }
 
-  // Nomes curtos para usar diretamente no gráfico
+  // Nomes curtos para usar diretamente no gráfico com quebra de linha se necessário
   private getShortLabels(isIAChart: boolean, length: number): string[] {
-    if (isIAChart) {
-      return [
-        "Uso IA",
-        "Abrangencia",
-        "Desafios",
-        "Beneficios",
-        "Avaliacao",
-        "Escala",
-        "Integracao",
-        "Capacitacao",
-        "Investimento",
-        "Visao"
-      ].slice(0, length);
-    } else {
-      return [
-        "Mudancas",
-        "Colaboracao",
-        "Ambiente",
-        "Experim.",
-        "Lideranca",
-        "Comunicacao",
-        "Tecnologia",
-        "Iniciativas",
-        "Feedback",
-        "Estrategia"
-      ].slice(0, length);
-    }
+    const iaLabels = [
+      "Uso de IA",
+      "Abrangencia",
+      "Desafios",
+      "Beneficios",
+      "Avaliacao de\ntecnologias",
+      "Escalabilidade",
+      "Integracao com\nprocessos",
+      "Capacitacao",
+      "Investimento",
+      "Visao\nestrategica"
+    ];
+    
+    const culturaLabels = [
+      "Mudancas",
+      "Engajamento",
+      "Colaboracao",
+      "Experimentacao",
+      "Lideranca",
+      "Comunicacao",
+      "Capacitacao",
+      "Reconhecimento",
+      "Cultura de\nfeedback",
+      "Alinhamento\nestrategico"
+    ];
+    
+    return (isIAChart ? iaLabels : culturaLabels).slice(0, length);
   }
 
   /**
