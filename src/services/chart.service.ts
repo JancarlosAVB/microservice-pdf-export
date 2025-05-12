@@ -63,14 +63,14 @@ export class ChartService {
       };
     });
     
-    // Usar números para os rótulos para evitar problemas de caracteres
-    const numericLabels = Array.from({ length: labels.length }, (_, i) => (i + 1).toString());
+    // Obter nomes curtos para categorias (sem acentos, ASCII apenas)
+    const shortLabels = this.getShortLabels(isIAChart, labels.length);
     
     // Configurações do gráfico com abordagem simplificada
     const config: ChartConfiguration = {
       type: 'radar' as ChartType,
       data: {
-        labels: numericLabels, // Usar números como rótulos - solução definitiva para o problema de caracteres
+        labels: shortLabels, // Usar nomes curtos ASCII em vez de números
         datasets: processedDatasets,
       },
       options: {
@@ -103,9 +103,11 @@ export class ChartService {
             displayColors: true,
             callbacks: {
               title: function(tooltipItems) {
-                const index = parseInt(tooltipItems[0].label) - 1;
-                return `Item ${index + 1}`;
-              },
+                const fullLabels = isIAChart ? 
+                  this.getIALegend() : 
+                  this.getCulturaLegend();
+                return fullLabels[tooltipItems[0].dataIndex];
+              }.bind(this),
               label: function(context) {
                 let label = context.dataset.label || '';
                 if (label) {
@@ -138,7 +140,7 @@ export class ChartService {
               display: true,
               centerPointLabels: false,
               font: {
-                size: 16,
+                size: 12,  // Reduzido para evitar sobreposição
                 weight: 'bold',
                 family: 'monospace'
               },
@@ -181,12 +183,12 @@ export class ChartService {
     // Criar o gráfico
     const chart = new Chart(ctx as any, config);
     
-    // Adicionar legenda na parte inferior do gráfico com rótulos reais
+    // Mantemos a legenda na parte inferior com as descrições completas
     chart.draw = function() {
       // Chamar a função original de desenho
       Chart.prototype.draw.apply(this, arguments);
       
-      // Desenhar legenda manual
+      // Desenhar legenda manual com a descrição completa para cada item
       const legendY = height - 30;
       const legendX = 50;
       
@@ -198,12 +200,13 @@ export class ChartService {
       
       ctx.fillText('Legenda:', legendX, legendY);
       
-      // Determinar quais rótulos mostrar (IA ou Cultura)
+      // Determinar quais rótulos completos mostrar (IA ou Cultura)
       const legendTexts = isIAChart ? this.getIALegend() : this.getCulturaLegend();
+      const shortLabelTexts = this.getShortLabels(isIAChart, labels.length);
       
       // Posicionar abaixo do gráfico
-      for (let i = 0; i < numericLabels.length; i++) {
-        const labelText = `${numericLabels[i]}: ${legendTexts[i] || `Item ${i+1}`}`;
+      for (let i = 0; i < shortLabelTexts.length; i++) {
+        const labelText = `${shortLabelTexts[i]}: ${legendTexts[i]}`;
         const colIndex = i % 2;
         const rowIndex = Math.floor(i / 2);
         
@@ -214,39 +217,72 @@ export class ChartService {
       }
       
       ctx.restore();
-    }.bind({
-      ...chart,
-      getIALegend: function() {
-        return [
-          "Uso de IA",
-          "Abrangencia",
-          "Desafios",
-          "Beneficios",
-          "Avaliacao",
-          "Escalabilidade",
-          "Integracao",
-          "Capacitacao",
-          "Investimento",
-          "Visao Estrategica"
-        ];
-      },
-      getCulturaLegend: function() {
-        return [
-          "Mudancas",
-          "Colaboracao",
-          "Ambiente",
-          "Experimentacao",
-          "Lideranca",
-          "Comunicacao",
-          "Tecnologia",
-          "Iniciativas",
-          "Feedback",
-          "Estrategia"
-        ];
-      }
-    });
+    }.bind(this);
     
     return chart;
+  }
+
+  // Nomes completos para IA
+  private getIALegend(): string[] {
+    return [
+      "Uso de IA",
+      "Abrangencia",
+      "Desafios",
+      "Beneficios",
+      "Avaliacao",
+      "Escalabilidade",
+      "Integracao",
+      "Capacitacao",
+      "Investimento",
+      "Visao Estrategica"
+    ];
+  }
+
+  // Nomes completos para Cultura
+  private getCulturaLegend(): string[] {
+    return [
+      "Mudancas",
+      "Colaboracao",
+      "Ambiente",
+      "Experimentacao",
+      "Lideranca",
+      "Comunicacao",
+      "Tecnologia",
+      "Iniciativas",
+      "Feedback",
+      "Estrategia"
+    ];
+  }
+
+  // Nomes curtos para usar diretamente no gráfico
+  private getShortLabels(isIAChart: boolean, length: number): string[] {
+    if (isIAChart) {
+      return [
+        "Uso IA",
+        "Abrangencia",
+        "Desafios",
+        "Beneficios",
+        "Avaliacao",
+        "Escala",
+        "Integracao",
+        "Capacitacao",
+        "Investimento",
+        "Visao"
+      ].slice(0, length);
+    } else {
+      return [
+        "Mudancas",
+        "Colaboracao",
+        "Ambiente",
+        "Experim.",
+        "Lideranca",
+        "Comunicacao",
+        "Tecnologia",
+        "Iniciativas",
+        "Feedback",
+        "Estrategia"
+      ].slice(0, length);
+    }
   }
 
   /**
