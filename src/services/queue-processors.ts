@@ -4,6 +4,7 @@ import { ChartController } from '../controllers/chart.controller';
 import Bull from 'bull';
 import fs from 'fs';
 import path from 'path';
+import axios from 'axios';
 
 export function setupQueueProcessors(queueService: QueueService): void {
   const formController = new FormController();
@@ -15,8 +16,24 @@ export function setupQueueProcessors(queueService: QueueService): void {
     try {
       // Atualiza o progresso
       await job.progress(10);
-
-      const { formData, iaChartData, culturaChartData, pdfOptions, callbackUrl } = job.data;
+      
+      // Enviar atualização de progresso para callback se disponível
+      const { formData, iaChartData, culturaChartData, pdfOptions, callbackUrl, statusUpdateUrl } = job.data;
+      
+      // Se existir URL para atualizações de status, notificar início (10%)
+      if (statusUpdateUrl) {
+        try {
+          await axios.post(statusUpdateUrl, {
+            jobId: job.id,
+            progress: 10,
+            status: 'processing',
+            message: 'Iniciando processamento do PDF'
+          });
+          console.log(`Atualização de status enviada para ${statusUpdateUrl}: 10%`);
+        } catch (error) {
+          console.error(`Erro ao enviar atualização de status para ${statusUpdateUrl}:`, error);
+        }
+      }
       
       // Aqui seria feito o processamento do PDF de forma similar ao que é feito no controller
       // Simulando a requisição e resposta
@@ -52,7 +69,37 @@ export function setupQueueProcessors(queueService: QueueService): void {
           .catch(reject);
       });
 
+      // Atualizar progresso e notificar (50%)
+      await job.progress(50);
+      if (statusUpdateUrl) {
+        try {
+          await axios.post(statusUpdateUrl, {
+            jobId: job.id,
+            progress: 50,
+            status: 'processing',
+            message: 'Gerando gráficos e conteúdo do PDF'
+          });
+          console.log(`Atualização de status enviada para ${statusUpdateUrl}: 50%`);
+        } catch (error) {
+          console.error(`Erro ao enviar atualização de status para ${statusUpdateUrl}:`, error);
+        }
+      }
+
+      // Atualizar progresso e notificar (80%)
       await job.progress(80);
+      if (statusUpdateUrl) {
+        try {
+          await axios.post(statusUpdateUrl, {
+            jobId: job.id,
+            progress: 80,
+            status: 'processing',
+            message: 'Finalizando PDF'
+          });
+          console.log(`Atualização de status enviada para ${statusUpdateUrl}: 80%`);
+        } catch (error) {
+          console.error(`Erro ao enviar atualização de status para ${statusUpdateUrl}:`, error);
+        }
+      }
 
       // Se houver uma URL de callback, enviar o PDF para ela
       if (callbackUrl) {
@@ -72,7 +119,23 @@ export function setupQueueProcessors(queueService: QueueService): void {
       
       fs.writeFileSync(filePath, pdfResult);
 
+      // Atualizar progresso para 100% e notificar conclusão
       await job.progress(100);
+      if (statusUpdateUrl) {
+        try {
+          await axios.post(statusUpdateUrl, {
+            jobId: job.id,
+            progress: 100,
+            status: 'completed',
+            message: 'PDF gerado com sucesso',
+            filePath,
+            fileName
+          });
+          console.log(`Atualização de status enviada para ${statusUpdateUrl}: 100%`);
+        } catch (error) {
+          console.error(`Erro ao enviar atualização de status para ${statusUpdateUrl}:`, error);
+        }
+      }
       
       return {
         success: true,
@@ -83,6 +146,22 @@ export function setupQueueProcessors(queueService: QueueService): void {
       };
     } catch (error) {
       console.error(`[PDF_GENERATION] Erro ao processar job ${job.id}:`, error);
+      
+      // Notificar erro
+      if (job.data.statusUpdateUrl) {
+        try {
+          await axios.post(job.data.statusUpdateUrl, {
+            jobId: job.id,
+            progress: 0,
+            status: 'failed',
+            message: error instanceof Error ? error.message : 'Erro desconhecido'
+          });
+          console.log(`Atualização de erro enviada para ${job.data.statusUpdateUrl}`);
+        } catch (callbackError) {
+          console.error(`Erro ao enviar atualização de erro para ${job.data.statusUpdateUrl}:`, callbackError);
+        }
+      }
+      
       throw error;
     }
   });
