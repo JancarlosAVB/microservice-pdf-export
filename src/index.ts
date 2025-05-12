@@ -5,10 +5,15 @@ import chartRoutes from './routes/chart.routes';
 import formRoutes from './routes/form.routes';
 import { errorHandler, notFoundHandler } from './utils/error-handler';
 import { FormController } from './controllers/form.controller';
+import { QueueService, QueueType } from './services/queue.service';
+import queueRoutes from './routes/queue.routes';
 
 // Inicializar o aplicativo Express
 const app = express();
 const formController = new FormController();
+
+// Inicializar o serviço de filas
+const queueService = QueueService.getInstance();
 
 // Middleware
 app.use(cors(config.corsOptions));
@@ -43,12 +48,17 @@ app.post('/api/diagnostic-pdf', async (req, res) => {
 // Rotas do microserviço
 app.use('/api/charts', chartRoutes);
 app.use('/api/forms', formRoutes);
+app.use('/api/queue', queueRoutes);
 
 // Middleware para rotas não encontradas
 app.use(notFoundHandler);
 
 // Middleware para tratamento de erros
 app.use(errorHandler);
+
+// Configurar processadores de fila
+import { setupQueueProcessors } from './services/queue-processors';
+setupQueueProcessors(queueService);
 
 // Tratamento de erros não capturados
 process.on('uncaughtException', (error) => {
@@ -58,6 +68,19 @@ process.on('uncaughtException', (error) => {
 
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Promessa rejeitada não tratada:', reason);
+});
+
+// Tratamento de desligamento do processo
+process.on('SIGTERM', async () => {
+  console.log('Recebido sinal SIGTERM, encerrando...');
+  await queueService.closeAll();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('Recebido sinal SIGINT, encerrando...');
+  await queueService.closeAll();
+  process.exit(0);
 });
 
 // Iniciar o servidor
@@ -72,4 +95,5 @@ app.listen(PORT, () => {
   console.log('- /api/forms/diagnostic-pdf (POST)');
   console.log('- /api/forms/variations (POST)');
   console.log('- /api/charts/* (vários endpoints)');
+  console.log('- /api/queue/* (monitoramento de filas)');
 }); 

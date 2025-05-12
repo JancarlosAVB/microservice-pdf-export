@@ -14,5 +14,18 @@ export const config = {
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
     credentials: true,
     maxAge: 86400 // 24 horas
+  },
+
+  // Configurações do Redis para Bull
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+  },
+  
+  // Configurações de fila
+  queue: {
+    concurrency: parseInt(process.env.QUEUE_CONCURRENCY || '2', 10),
+    limiterMax: parseInt(process.env.QUEUE_RATE_LIMIT_MAX || '10', 10),
+    limiterDuration: parseInt(process.env.QUEUE_RATE_LIMIT_DURATION || '60000', 10), // 1 minuto
   }
 }; 

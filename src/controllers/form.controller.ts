@@ -1,14 +1,17 @@
 import { Request, Response } from 'express';
 import { FormService } from '../services/form.service';
 import { ChartController } from './chart.controller';
+import { QueueService, QueueType } from '../services/queue.service';
 
 export class FormController {
     private formService: FormService;
     private chartController: ChartController;
+    private queueService: QueueService;
 
     constructor() {
         this.formService = new FormService();
         this.chartController = new ChartController();
+        this.queueService = QueueService.getInstance();
     }
 
     async processFormData(req: Request, res: Response) {
@@ -18,7 +21,7 @@ export class FormController {
             // Log detalhado
             console.log('Body recebido:', JSON.stringify(req.body, null, 2));
             
-            const { formData, iaChartData, culturaChartData, pdfOptions } = req.body;
+            const { formData, iaChartData, culturaChartData, pdfOptions, useQueue } = req.body;
             
             if (!formData) {
                 return res.status(400).json({
@@ -114,8 +117,7 @@ export class FormController {
             if (req.path === '/api/diagnostic-pdf' || req.originalUrl === '/api/diagnostic-pdf') {
                 console.log('Gerando PDF para a solicitação com scores:', result.scores.ia, result.scores.cultura);
                 
-                // Modificar o corpo da requisição atual em vez de criar uma nova
-                req.body = {
+                const pdfRequestData = {
                     iaChartData: iaChartData || this.createDefaultChartData(result.scores.ia, 'ia'),
                     culturaChartData: culturaChartData || this.createDefaultChartData(result.scores.cultura, 'cultura'),
                     pdfOptions: {
@@ -130,8 +132,30 @@ export class FormController {
                     }
                 };
                 
-                // Gerar o PDF usando o chartController
-                return this.chartController.generateDiagnosticPdf(req, res);
+                // Verificar se devemos usar o sistema de filas
+                if (useQueue === true) {
+                    // Adicionar o job à fila
+                    const job = await this.queueService.addJob(QueueType.PDF_GENERATION, {
+                        formData,
+                        ...pdfRequestData,
+                        callbackUrl: req.body.callbackUrl || null
+                    });
+                    
+                    return res.status(202).json({
+                        success: true,
+                        message: 'Solicitação de geração de PDF adicionada à fila',
+                        jobId: job.id,
+                        queueName: QueueType.PDF_GENERATION,
+                        statusUrl: `/api/queue/${QueueType.PDF_GENERATION}/jobs/${job.id}`
+                    });
+                } else {
+                    // Processamento síncrono (comportamento original)
+                    // Modificar o corpo da requisição atual
+                    req.body = pdfRequestData;
+                    
+                    // Gerar o PDF usando o chartController
+                    return this.chartController.generateDiagnosticPdf(req, res);
+                }
             }
             
             // Se não for uma solicitação de PDF, retorna o JSON com os resultados
